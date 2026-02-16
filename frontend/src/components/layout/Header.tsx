@@ -37,7 +37,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
     <header className="h-14 flex items-center justify-between px-4 glass-header relative z-20">
       <button
         onClick={onMenuClick}
-        className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+        className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-purple-200 hover:bg-white/10 transition-colors"
       >
         <Menu size={20} />
       </button>
@@ -47,7 +47,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-3">
         {user && (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-white/80 hidden sm:inline">
+            <span className="text-sm font-medium text-purple-200/80 hidden sm:inline">
               {user.full_name}
             </span>
             <span
@@ -64,7 +64,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
         <button
           onClick={toggle}
-          className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+          className="p-2 rounded-lg text-gray-400 hover:text-purple-200 hover:bg-white/10 transition-all"
           title={dark ? t("settings.lightTheme") : t("settings.darkTheme")}
         >
           {dark ? <Sun size={18} /> : <Moon size={18} />}

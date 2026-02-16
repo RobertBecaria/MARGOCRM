@@ -39,7 +39,7 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
   if (fullScreen) {
     return (
       <div className="flex flex-col h-[calc(100vh-7rem)] animate-fade-in">
-        <h1 className="text-xl font-semibold text-white mb-4">
+        <h1 className="text-xl font-semibold text-purple-200 mb-4">
           {t("ai.title")}
         </h1>
         <div className="flex-1 flex flex-col glass-card rounded-xl overflow-hidden">
@@ -80,13 +80,13 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-2">
               <Bot size={18} className="text-blue-400" />
-              <span className="text-sm font-semibold text-white">
+              <span className="text-sm font-semibold text-purple-200">
                 {t("ai.title")}
               </span>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-purple-200 hover:bg-white/10 transition-colors"
             >
               <X size={16} />
             </button>
@@ -170,7 +170,7 @@ function InputBar({
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder={t("ai.placeholder")}
-        className="flex-1 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+        className="flex-1 rounded-lg px-3 py-2 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
       />
       <button
         onClick={onSend}

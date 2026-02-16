@@ -163,7 +163,7 @@ export default function Schedules() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-xl font-semibold text-purple-200">
           {t("schedule.title")}
         </h1>
         <Button onClick={() => openCreate()}>
@@ -181,7 +181,7 @@ export default function Schedules() {
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="text-sm font-medium text-white min-w-[180px] text-center">
+          <span className="text-sm font-medium text-purple-200 min-w-[180px] text-center">
             {format(weekStart, "d MMM", { locale: ru })} — {format(weekEnd, "d MMM yyyy", { locale: ru })}
           </span>
           <button
@@ -231,7 +231,7 @@ export default function Schedules() {
                       onClick={(e) => { e.stopPropagation(); openEdit(s); }}
                       className="text-xs p-1.5 rounded-md bg-blue-500/10 border border-blue-500/20 cursor-pointer hover:bg-blue-500/20"
                     >
-                      <div className="font-medium text-white truncate">
+                      <div className="font-medium text-purple-200 truncate">
                         {info?.user.full_name || `ID ${s.user_id}`}
                       </div>
                       <div className="text-gray-500">
@@ -278,7 +278,7 @@ export default function Schedules() {
                         className="glass-card rounded-lg p-3 cursor-pointer"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm text-white">
+                          <span className="font-medium text-sm text-purple-200">
                             {info?.user.full_name || `ID ${s.user_id}`}
                           </span>
                           <Badge color={s.status === "completed" ? "green" : s.status === "cancelled" ? "red" : "blue"}>

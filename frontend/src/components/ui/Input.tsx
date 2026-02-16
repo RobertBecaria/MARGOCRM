@@ -18,7 +18,7 @@ export default function Input({ label, error, id, className = "", ...props }: In
       )}
       <input
         id={id}
-        className={`w-full rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 glass-input focus:outline-none ${
+        className={`w-full rounded-lg px-3 py-2 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none ${
           error
             ? "border-red-500/50 focus:border-red-500/50 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.15)]"
             : ""

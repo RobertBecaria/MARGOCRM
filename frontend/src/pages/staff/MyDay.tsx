@@ -42,7 +42,7 @@ export default function MyDay() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-white">
+      <h1 className="text-xl font-semibold text-purple-200">
         {t("nav.myDay")}
       </h1>
 
@@ -63,7 +63,7 @@ export default function MyDay() {
                 key={s.id}
                 className="glass-card rounded-xl p-4"
               >
-                <div className="text-sm font-medium text-white">
+                <div className="text-sm font-medium text-purple-200">
                   {s.shift_start.slice(0, 5)} — {s.shift_end.slice(0, 5)}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">{s.location}</div>
@@ -94,7 +94,7 @@ export default function MyDay() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-medium text-white">
+                    <div className="text-sm font-medium text-purple-200">
                       {task.title}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
@@ -135,7 +135,7 @@ export default function MyDay() {
           <Bot size={20} />
         </div>
         <div>
-          <div className="text-sm font-medium text-white">
+          <div className="text-sm font-medium text-purple-200">
             {t("ai.askAssistant")}
           </div>
           <div className="text-xs text-gray-500">

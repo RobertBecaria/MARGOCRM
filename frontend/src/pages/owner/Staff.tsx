@@ -129,7 +129,7 @@ export default function Staff() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-xl font-semibold text-purple-200">
           {t("staff.title")}
         </h1>
         <Button onClick={openCreate}>
@@ -146,7 +146,7 @@ export default function Staff() {
             placeholder={t("common.search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
           />
         </div>
         <Select
@@ -188,7 +188,7 @@ export default function Staff() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => openEdit(user)}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/10"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-purple-200 hover:bg-white/10"
                         title={t("common.edit")}
                       >
                         <Pencil size={15} />
@@ -217,7 +217,7 @@ export default function Staff() {
                 className="glass-card rounded-xl p-4 space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-white">
+                  <span className="font-medium text-purple-200">
                     {user.full_name}
                   </span>
                   <Badge color={roleBadgeColor[user.role]}>
@@ -235,7 +235,7 @@ export default function Staff() {
                   <div className="flex gap-1">
                     <button
                       onClick={() => openEdit(user)}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-white"
+                      className="p-1.5 rounded-md text-gray-400 hover:text-purple-200"
                     >
                       <Pencil size={15} />
                     </button>

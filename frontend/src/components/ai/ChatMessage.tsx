@@ -19,7 +19,7 @@ export default function ChatMessage({ role, content, timestamp, actions }: ChatM
           className={`px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
             isUser
               ? "bg-blue-600 text-white rounded-br-sm"
-              : "bg-white/10 text-white rounded-bl-sm"
+              : "bg-white/10 text-purple-200 rounded-bl-sm"
           }`}
         >
           {content}

@@ -18,7 +18,7 @@ export default function Select({ label, options, id, className = "", ...props }:
       )}
       <select
         id={id}
-        className={`w-full rounded-lg px-3 py-2 text-sm text-white glass-input focus:outline-none ${className}`}
+        className={`w-full rounded-lg px-3 py-2 text-sm text-purple-200 glass-input focus:outline-none ${className}`}
         {...props}
       >
         {options.map((opt) => (

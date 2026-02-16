@@ -74,7 +74,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
               placeholder="email@example.com"
             />
           </div>
@@ -92,7 +92,7 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
             />
           </div>
 

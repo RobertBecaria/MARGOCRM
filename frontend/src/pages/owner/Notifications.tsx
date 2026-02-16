@@ -55,7 +55,7 @@ export default function Notifications() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-xl font-semibold text-purple-200">
           {t("notifications.title")}
         </h1>
         {hasUnread && (
@@ -104,7 +104,7 @@ export default function Notifications() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${n.is_read ? "text-gray-400" : "text-white"}`}>
+                    <span className={`text-sm font-medium ${n.is_read ? "text-gray-400" : "text-purple-200"}`}>
                       {n.title}
                     </span>
                     {!n.is_read && <span className="w-2 h-2 rounded-full bg-blue-500" />}

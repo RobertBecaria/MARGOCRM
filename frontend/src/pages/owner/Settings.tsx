@@ -57,7 +57,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-6 max-w-md animate-fade-in">
-      <h1 className="text-xl font-semibold text-white">
+      <h1 className="text-xl font-semibold text-purple-200">
         {t("nav.settings")}
       </h1>
 

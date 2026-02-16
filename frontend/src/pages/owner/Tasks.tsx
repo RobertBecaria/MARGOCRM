@@ -143,7 +143,7 @@ export default function Tasks() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-xl font-semibold text-purple-200">
           {t("tasks.title")}
         </h1>
         <Button onClick={openCreate}>
@@ -325,7 +325,7 @@ function TaskCard({
           : "border-white/[0.08]"
       }`}
     >
-      <div className="text-sm font-medium text-white mb-1">
+      <div className="text-sm font-medium text-purple-200 mb-1">
         {task.title}
       </div>
       <div className="flex items-center gap-2 flex-wrap">

@@ -23,7 +23,7 @@ export default function MyPay() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-white">
+      <h1 className="text-xl font-semibold text-purple-200">
         {t("nav.myPay")}
       </h1>
 
@@ -71,7 +71,7 @@ export default function MyPay() {
                     {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
                   </Badge>
                 </div>
-                <div className="text-lg font-bold text-white">
+                <div className="text-lg font-bold text-purple-200">
                   {formatMoney(r.net_amount)}
                 </div>
                 <div className="text-xs text-gray-500 flex gap-3">

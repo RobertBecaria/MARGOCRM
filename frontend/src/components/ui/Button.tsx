@@ -13,7 +13,7 @@ const variantClasses: Record<Variant, string> = {
   primary:
     "bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400 focus:ring-blue-500/50 btn-glow",
   secondary:
-    "glass-card text-gray-300 hover:text-white focus:ring-gray-400/30",
+    "glass-card text-gray-300 hover:text-purple-200 focus:ring-gray-400/30",
   danger:
     "bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-500 hover:to-red-400 focus:ring-red-500/50",
 };

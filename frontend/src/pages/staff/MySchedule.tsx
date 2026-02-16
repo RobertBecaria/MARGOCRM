@@ -73,7 +73,7 @@ export default function MySchedule() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-white">
+      <h1 className="text-xl font-semibold text-purple-200">
         {t("nav.mySchedule")}
       </h1>
 
@@ -84,7 +84,7 @@ export default function MySchedule() {
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="text-sm font-medium text-white min-w-[180px] text-center">
+        <span className="text-sm font-medium text-purple-200 min-w-[180px] text-center">
           {format(weekStart, "d MMM", { locale: ru })} — {format(weekEnd, "d MMM yyyy", { locale: ru })}
         </span>
         <button
@@ -122,7 +122,7 @@ export default function MySchedule() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-medium text-white">
+                          <div className="text-sm font-medium text-purple-200">
                             {s.shift_start.slice(0, 5)}–{s.shift_end.slice(0, 5)}
                           </div>
                           <div className="text-xs text-gray-500 mt-0.5">

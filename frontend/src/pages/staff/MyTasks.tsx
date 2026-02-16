@@ -32,7 +32,7 @@ export default function MyTasks() {
   if (tasks.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-xl font-semibold text-purple-200">
           {t("nav.myTasks")}
         </h1>
         <div className="text-center py-12 text-gray-500">
@@ -44,7 +44,7 @@ export default function MyTasks() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-white">
+      <h1 className="text-xl font-semibold text-purple-200">
         {t("nav.myTasks")}
       </h1>
 
@@ -63,7 +63,7 @@ export default function MyTasks() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-purple-200">
                     {task.title}
                   </div>
                   {task.description && (

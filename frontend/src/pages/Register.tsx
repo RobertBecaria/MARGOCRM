@@ -94,7 +94,7 @@ export default function Register() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
             />
           </div>
 
@@ -108,7 +108,7 @@ export default function Register() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
               placeholder="email@example.com"
             />
           </div>
@@ -121,7 +121,7 @@ export default function Register() {
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 glass-input focus:outline-none"
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -140,7 +140,7 @@ export default function Register() {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
               placeholder="+7 999 123-45-67"
             />
           </div>
@@ -156,7 +156,7 @@ export default function Register() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
             />
           </div>
 
@@ -171,7 +171,7 @@ export default function Register() {
               minLength={6}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
             />
           </div>
 

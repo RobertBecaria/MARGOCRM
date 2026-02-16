@@ -33,7 +33,7 @@ export default function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all relative"
+        className="p-2 rounded-lg text-gray-400 hover:text-purple-200 hover:bg-white/10 transition-all relative"
       >
         <Bell size={18} />
         {unreadCount > 0 && (
@@ -46,7 +46,7 @@ export default function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-full mt-1 w-80 glass-modal rounded-xl z-50 overflow-hidden animate-scale-in">
           <div className="px-4 py-3 border-b border-white/[0.08]">
-            <span className="text-sm font-semibold text-white">
+            <span className="text-sm font-semibold text-purple-200">
               Уведомления
             </span>
           </div>
@@ -69,7 +69,7 @@ export default function NotificationBell() {
                       <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-400 shrink-0 shadow-[0_0_6px_rgba(59,130,246,0.5)]" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-white truncate">
+                      <div className="text-sm font-medium text-purple-200 truncate">
                         {n.title}
                       </div>
                       <div className="text-xs text-gray-500 truncate">

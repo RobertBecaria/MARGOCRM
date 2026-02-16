@@ -54,7 +54,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <h1 className="text-xl font-semibold text-white">
+      <h1 className="text-xl font-semibold text-purple-200">
         {t("dashboard.welcome")}, {user?.full_name}
       </h1>
 
@@ -118,7 +118,7 @@ export default function Dashboard() {
               >
                 <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${n.is_read ? "bg-gray-600" : "bg-blue-400 shadow-[0_0_6px_rgba(59,130,246,0.5)]"}`} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white">{n.title}</div>
+                  <div className="text-sm text-purple-200">{n.title}</div>
                   <div className="text-xs text-gray-500 truncate">{n.message}</div>
                 </div>
                 <span className="text-[10px] text-gray-600 whitespace-nowrap">
