@@ -4,9 +4,10 @@ import { useAuth } from "../../hooks/useAuth";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import MobileNav from "./MobileNav";
+import ChatPanel from "../ai/ChatPanel";
 
 export default function Layout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!isAuthenticated) {
@@ -26,6 +27,8 @@ export default function Layout() {
 
         <MobileNav />
       </div>
+
+      {(user?.role === "owner" || user?.role === "manager") && <ChatPanel />}
     </div>
   );
 }

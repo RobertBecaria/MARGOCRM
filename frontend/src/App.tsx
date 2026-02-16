@@ -14,18 +14,8 @@ import MyDay from "./pages/staff/MyDay";
 import MySchedule from "./pages/staff/MySchedule";
 import MyTasks from "./pages/staff/MyTasks";
 import MyPay from "./pages/staff/MyPay";
+import AiChat from "./pages/staff/AiChat";
 import { useAuth } from "./hooks/useAuth";
-
-// Placeholder — will be replaced with full AI chat implementation
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div className="text-xl font-semibold text-gray-900 dark:text-white">
-      {title}
-    </div>
-  );
-}
-
-function AiChat() { return <Placeholder title="AI Ассистент" />; }
 
 function LoginRoute() {
   const { isAuthenticated } = useAuth();
