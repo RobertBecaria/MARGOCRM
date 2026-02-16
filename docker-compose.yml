@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dom
+      POSTGRES_PASSWORD: dom
+      POSTGRES_DB: dom
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://dom:dom@db:5432/dom
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - app
+
+volumes:
+  pgdata:
