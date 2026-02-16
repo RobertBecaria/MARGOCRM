@@ -6,6 +6,8 @@ import Login from "./pages/Login";
 import Staff from "./pages/owner/Staff";
 import Schedules from "./pages/owner/Schedules";
 import MySchedule from "./pages/staff/MySchedule";
+import Tasks from "./pages/owner/Tasks";
+import MyTasks from "./pages/staff/MyTasks";
 import { useAuth } from "./hooks/useAuth";
 
 // Placeholder pages — will be replaced with full implementations
@@ -18,12 +20,10 @@ function Placeholder({ title }: { title: string }) {
 }
 
 function Dashboard() { return <Placeholder title="Главная" />; }
-function Tasks() { return <Placeholder title="Задачи" />; }
 function Finance() { return <Placeholder title="Финансы" />; }
 function Notifications() { return <Placeholder title="Уведомления" />; }
 function SettingsPage() { return <Placeholder title="Настройки" />; }
 function MyDay() { return <Placeholder title="Мой день" />; }
-function MyTasks() { return <Placeholder title="Мои задачи" />; }
 function MyPay() { return <Placeholder title="Мои выплаты" />; }
 function AiChat() { return <Placeholder title="AI Ассистент" />; }
 
