@@ -26,6 +26,10 @@ def get_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Staff can only view their own profile
+    if current_user.role not in (RoleEnum.owner, RoleEnum.manager) and current_user.id != user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -43,7 +47,16 @@ def update_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    for field, value in data.dict(exclude_unset=True).items():
+    # Only owner can change roles; managers cannot promote to owner
+    update_data = data.dict(exclude_unset=True)
+    if "role" in update_data:
+        if current_user.role != RoleEnum.owner:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only owner can change user roles",
+            )
+
+    for field, value in update_data.items():
         setattr(user, field, value)
 
     db.commit()

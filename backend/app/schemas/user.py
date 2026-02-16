@@ -7,7 +7,7 @@ from app.models.user import RoleEnum
 
 
 class UserCreate(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     full_name: str
     role: RoleEnum
@@ -15,7 +15,7 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 

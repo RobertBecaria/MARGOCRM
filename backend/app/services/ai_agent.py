@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.ai import AiConversation, AiMessage
 from app.models.user import RoleEnum, User
-from app.services.ai_tools import OWNER_TOOLS, STAFF_TOOLS, TOOL_DISPATCH
+from app.services.ai_tools import OWNER_TOOLS, STAFF_TOOLS, TOOL_DISPATCH, STAFF_TOOL_NAMES
 
 logger = logging.getLogger(__name__)
 
@@ -109,11 +109,29 @@ class DeepSeekAgent:
                     func_args = {}
 
                 # Enforce staff restrictions
-                if user.role not in (RoleEnum.owner, RoleEnum.manager):
+                is_staff = user.role not in (RoleEnum.owner, RoleEnum.manager)
+                if is_staff:
+                    # Hard whitelist: staff can only call staff tools
+                    if func_name not in STAFF_TOOL_NAMES:
+                        result = {"error": "Permission denied"}
+                        actions_taken.append({
+                            "tool": func_name,
+                            "args": func_args,
+                            "result": result,
+                        })
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": tool_call["id"],
+                            "content": json.dumps(result, ensure_ascii=False),
+                        })
+                        continue
+
                     if func_name in ("get_tasks", "get_schedule", "get_payroll"):
                         func_args["user_id"] = user.id
                     elif func_name == "create_schedule_change_request":
                         func_args["user_id"] = user.id
+                    elif func_name == "update_task_status":
+                        func_args["_caller_id"] = user.id
 
                 # Execute tool
                 tool_func = TOOL_DISPATCH.get(func_name)

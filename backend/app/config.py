@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com/v1"
     resend_api_key: str = ""
     from_email: str = "noreply@dom.app"
+    cors_origins: str = "http://localhost:5173"
+    login_rate_limit: int = 5  # max attempts per minute
 
     class Config:
         env_file = ".env"

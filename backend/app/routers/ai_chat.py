@@ -47,7 +47,7 @@ async def websocket_chat(websocket: WebSocket):
             try:
                 data = await websocket.receive_text()
                 message_data = json.loads(data)
-                user_message = message_data.get("message", "")
+                user_message = message_data.get("message") or message_data.get("content", "")
                 conversation_id = message_data.get("conversation_id", conversation_id)
 
                 # Send typing indicator
@@ -88,6 +88,6 @@ async def websocket_chat(websocket: WebSocket):
                 await websocket.send_json({"type": "error", "message": "Invalid JSON"})
             except Exception as e:
                 logger.error(f"WebSocket error: {e}")
-                await websocket.send_json({"type": "error", "message": str(e)})
+                await websocket.send_json({"type": "error", "message": "Произошла внутренняя ошибка"})
     finally:
         db.close()

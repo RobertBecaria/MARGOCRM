@@ -1,4 +1,5 @@
 import logging
+from html import escape
 from typing import Optional
 
 from app.config import settings
@@ -30,12 +31,12 @@ def send_schedule_notification(to_email: str, staff_name: str, date: str, shift_
     subject = f"Дом — Новая смена {date}"
     html = f"""
     <h2>Новая смена в расписании</h2>
-    <p>Уважаемый(ая) {staff_name},</p>
+    <p>Уважаемый(ая) {escape(staff_name)},</p>
     <p>Вам назначена смена:</p>
     <ul>
-        <li><strong>Дата:</strong> {date}</li>
-        <li><strong>Время:</strong> {shift_start} — {shift_end}</li>
-        <li><strong>Место:</strong> {location}</li>
+        <li><strong>Дата:</strong> {escape(date)}</li>
+        <li><strong>Время:</strong> {escape(shift_start)} — {escape(shift_end)}</li>
+        <li><strong>Место:</strong> {escape(location)}</li>
     </ul>
     <p>С уважением,<br>Система «Дом»</p>
     """
@@ -43,15 +44,15 @@ def send_schedule_notification(to_email: str, staff_name: str, date: str, shift_
 
 
 def send_task_assignment(to_email: str, staff_name: str, task_title: str, priority: str, due_date: Optional[str] = None):
-    subject = f"Дом — Новая задача: {task_title}"
-    due_line = f"<li><strong>Срок:</strong> {due_date}</li>" if due_date else ""
+    subject = f"Дом — Новая задача: {escape(task_title)}"
+    due_line = f"<li><strong>Срок:</strong> {escape(due_date)}</li>" if due_date else ""
     html = f"""
     <h2>Новая задача</h2>
-    <p>Уважаемый(ая) {staff_name},</p>
+    <p>Уважаемый(ая) {escape(staff_name)},</p>
     <p>Вам назначена задача:</p>
     <ul>
-        <li><strong>Задача:</strong> {task_title}</li>
-        <li><strong>Приоритет:</strong> {priority}</li>
+        <li><strong>Задача:</strong> {escape(task_title)}</li>
+        <li><strong>Приоритет:</strong> {escape(priority)}</li>
         {due_line}
     </ul>
     <p>С уважением,<br>Система «Дом»</p>
@@ -60,11 +61,11 @@ def send_task_assignment(to_email: str, staff_name: str, task_title: str, priori
 
 
 def send_payment_confirmation(to_email: str, staff_name: str, period: str, net_amount: float):
-    subject = f"Дом — Выплата за {period}"
+    subject = f"Дом — Выплата за {escape(period)}"
     html = f"""
     <h2>Подтверждение выплаты</h2>
-    <p>Уважаемый(ая) {staff_name},</p>
-    <p>Выплата за период <strong>{period}</strong> произведена.</p>
+    <p>Уважаемый(ая) {escape(staff_name)},</p>
+    <p>Выплата за период <strong>{escape(period)}</strong> произведена.</p>
     <p><strong>Сумма:</strong> {net_amount:,.2f} ₽</p>
     <p>С уважением,<br>Система «Дом»</p>
     """

@@ -1,6 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import time
+from collections import defaultdict
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.middleware.rbac import require_role
 from app.models.user import RoleEnum, User
@@ -21,6 +25,23 @@ from app.utils.security import (
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+# Simple in-memory rate limiter for login
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+
+
+def _check_rate_limit(client_ip: str) -> None:
+    now = time.time()
+    window = 60.0  # 1 minute
+    attempts = _login_attempts[client_ip]
+    # Remove old attempts
+    _login_attempts[client_ip] = [t for t in attempts if now - t < window]
+    if len(_login_attempts[client_ip]) >= settings.login_rate_limit:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Try again later.",
+        )
+    _login_attempts[client_ip].append(now)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -50,7 +71,10 @@ def register(
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: UserLogin, db: Session = Depends(get_db)):
+def login(data: UserLogin, request: Request, db: Session = Depends(get_db)):
+    client_ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(client_ip)
+
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(

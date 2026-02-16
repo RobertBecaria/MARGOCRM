@@ -124,10 +124,13 @@ def create_task(db: Session, assigned_to: int, title: str, description: Optional
     return {"id": task.id, "title": title, "message": "Task created"}
 
 
-def update_task_status(db: Session, task_id: int, status: str) -> Dict:
+def update_task_status(db: Session, task_id: int, status: str, _caller_id: Optional[int] = None) -> Dict:
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         return {"error": "Task not found"}
+    # If called by staff, enforce task ownership
+    if _caller_id is not None and task.assigned_to != _caller_id:
+        return {"error": "Permission denied: not your task"}
     task.status = StatusEnum(status)
     db.commit()
     return {"id": task.id, "status": status, "message": "Task status updated"}
@@ -449,6 +452,11 @@ OWNER_TOOLS = [
         },
     },
 ]
+
+STAFF_TOOL_NAMES = {
+    "get_tasks", "update_task_status", "get_schedule",
+    "get_payroll", "create_schedule_change_request",
+}
 
 STAFF_TOOLS = [
     {
