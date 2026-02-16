@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth
+from app.routers import auth, finance, notifications, schedules, tasks, users
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,11 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(schedules.router)
+app.include_router(tasks.router)
+app.include_router(finance.router)
+app.include_router(notifications.router)
 
 
 @app.on_event("startup")
