@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Check } from "lucide-react";
@@ -16,6 +16,7 @@ import {
 } from "../../api/finance";
 import { getUsers } from "../../api/users";
 import type { ExpenseCategory, PayrollStatus } from "../../types";
+import { EXPENSE_CATEGORY_KEYS } from "../../utils/constants";
 import { formatMoney } from "../../utils/formatters";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -33,14 +34,6 @@ const tabs = [
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
-
-const categoryLabels: Record<ExpenseCategory, string> = {
-  household: "Хозяйство",
-  transport: "Транспорт",
-  food: "Еда",
-  entertainment: "Развлечения",
-  other: "Прочее",
-};
 
 const PIE_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#6b7280"];
 
@@ -87,6 +80,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
   const { data: records = [], isLoading } = useQuery({ queryKey: ["payroll"], queryFn: () => getPayroll() });
   const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
   const staffList = users.filter((u) => u.role !== "owner");
+  const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
   const createMut = useMutation({
     mutationFn: createPayroll,
@@ -120,17 +114,17 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
       <div className="flex justify-end">
         <Button onClick={() => setModalOpen(true)}>
           <Plus size={16} />
-          Создать запись
+          {t("finance.createRecord")}
         </Button>
       </div>
 
       {records.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Нет данных</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>
       ) : (
         <div className="overflow-x-auto">
-          <Table headers={["Сотрудник", t("finance.period"), "Оклад", "Бонусы", "Вычеты", t("finance.total"), t("staff.status"), ""]}>
+          <Table headers={[t("staff.employee"), t("finance.period"), t("finance.baseSalary"), t("finance.bonuses"), t("finance.deductions"), t("finance.total"), t("staff.status"), ""]}>
             {records.map((r) => {
-              const user = users.find((u) => u.id === r.user_id);
+              const user = userById.get(r.user_id);
               return (
                 <tr key={r.id}>
                   <Td className="font-medium">{user?.full_name || `ID ${r.user_id}`}</Td>
@@ -164,22 +158,22 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Создать запись">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t("finance.createRecord")}>
         <div className="space-y-4">
           <Select
-            label="Сотрудник"
-            options={[{ value: "", label: "Выберите" }, ...staffList.map((u) => ({ value: String(u.id), label: u.full_name }))]}
+            label={t("staff.employee")}
+            options={[{ value: "", label: t("finance.select") }, ...staffList.map((u) => ({ value: String(u.id), label: u.full_name }))]}
             value={form.user_id}
             onChange={(e) => setForm({ ...form, user_id: e.target.value })}
           />
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Начало периода" type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
-            <Input label="Конец периода" type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
+            <Input label={t("finance.periodStart")} type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
+            <Input label={t("finance.periodEnd")} type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
           </div>
-          <Input label="Оклад" type="number" value={form.base_salary} onChange={(e) => setForm({ ...form, base_salary: e.target.value })} />
+          <Input label={t("finance.baseSalary")} type="number" value={form.base_salary} onChange={(e) => setForm({ ...form, base_salary: e.target.value })} />
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Бонусы" type="number" value={form.bonuses} onChange={(e) => setForm({ ...form, bonuses: e.target.value })} />
-            <Input label="Вычеты" type="number" value={form.deductions} onChange={(e) => setForm({ ...form, deductions: e.target.value })} />
+            <Input label={t("finance.bonuses")} type="number" value={form.bonuses} onChange={(e) => setForm({ ...form, bonuses: e.target.value })} />
+            <Input label={t("finance.deductions")} type="number" value={form.deductions} onChange={(e) => setForm({ ...form, deductions: e.target.value })} />
           </div>
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
@@ -209,17 +203,17 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       <div className="flex justify-end">
         <Button onClick={() => setModalOpen(true)}>
           <Plus size={16} />
-          Добавить расход
+          {t("finance.addExpense")}
         </Button>
       </div>
 
       {expenses.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Нет данных</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>
       ) : (
-        <Table headers={["Категория", "Описание", t("finance.amount"), "Дата"]}>
+        <Table headers={[t("finance.category"), t("common.description"), t("finance.amount"), t("common.date")]}>
           {expenses.map((e) => (
             <tr key={e.id}>
-              <Td><Badge color="blue">{categoryLabels[e.category]}</Badge></Td>
+              <Td><Badge color="blue">{t(EXPENSE_CATEGORY_KEYS[e.category])}</Badge></Td>
               <Td>{e.description}</Td>
               <Td className="font-medium">{formatMoney(e.amount)}</Td>
               <Td>{format(parseISO(e.date), "d MMM yyyy", { locale: ru })}</Td>
@@ -228,17 +222,17 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
         </Table>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Добавить расход">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t("finance.addExpense")}>
         <div className="space-y-4">
           <Select
-            label="Категория"
-            options={Object.entries(categoryLabels).map(([v, l]) => ({ value: v, label: l }))}
+            label={t("finance.category")}
+            options={Object.entries(EXPENSE_CATEGORY_KEYS).map(([v, key]) => ({ value: v, label: t(key) }))}
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
           />
-          <Input label="Описание" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <Input label={t("common.description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-          <Input label="Дата" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
             <Button onClick={() => createMut.mutate({ ...form, amount: Number(form.amount) })} loading={createMut.isPending}>{t("common.save")}</Button>
@@ -267,14 +261,14 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
       <div className="flex justify-end">
         <Button onClick={() => setModalOpen(true)}>
           <Plus size={16} />
-          Добавить доход
+          {t("finance.addIncome")}
         </Button>
       </div>
 
       {incomeList.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">Нет данных</div>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>
       ) : (
-        <Table headers={["Источник", "Описание", t("finance.amount"), "Дата"]}>
+        <Table headers={[t("finance.source"), t("common.description"), t("finance.amount"), t("common.date")]}>
           {incomeList.map((i) => (
             <tr key={i.id}>
               <Td className="font-medium">{i.source}</Td>
@@ -286,13 +280,13 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
         </Table>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Добавить доход">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t("finance.addIncome")}>
         <div className="space-y-4">
-          <Input label="Источник" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
-          <Input label="Описание" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          <Input label={t("finance.source")} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
+          <Input label={t("common.description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-          <Input label="Категория" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-          <Input label="Дата" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <Input label={t("finance.category")} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+          <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
             <Button onClick={() => createMut.mutate({ ...form, amount: Number(form.amount) })} loading={createMut.isPending}>{t("common.save")}</Button>
@@ -310,10 +304,10 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
   });
 
   if (isLoading) return <LoadingSpinner />;
-  if (!summary) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">Нет данных</div>;
+  if (!summary) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>;
 
   const pieData = summary.expense_by_category.map((item) => ({
-    name: categoryLabels[item.category as ExpenseCategory] || item.category,
+    name: EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory] ? t(EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory]) : item.category,
     value: item.amount,
   }));
 
@@ -334,7 +328,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
           </div>
         </div>
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Баланс</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{t("finance.balance")}</div>
           <div className={`text-2xl font-bold mt-1 ${summary.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
             {formatMoney(summary.balance)}
           </div>
@@ -345,7 +339,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
       {summary.monthly.length > 0 && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-            Доходы и расходы по месяцам
+            {t("finance.monthlyChart")}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={summary.monthly}>
@@ -365,7 +359,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
       {pieData.length > 0 && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-            Расходы по категориям
+            {t("finance.expensesByCategory")}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>

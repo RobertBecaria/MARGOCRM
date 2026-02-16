@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Users, CheckSquare, Wallet, Bell, Plus, Receipt } from "lucide-react";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import { getSchedules } from "../../api/schedules";
 import { getTasks } from "../../api/tasks";
@@ -13,6 +15,7 @@ import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -38,42 +41,47 @@ export default function Dashboard() {
     queryFn: () => getFinanceSummary(),
   });
 
-  const pendingTasks = tasks.filter((t) => t.status !== "done");
-  const unreadNotifs = notifications.filter((n) => !n.is_read);
-  const recentNotifs = notifications.slice(0, 10);
+  const pendingTasks = useMemo(() => tasks.filter((t) => t.status !== "done"), [tasks]);
+  const { unreadCount, recentNotifs } = useMemo(() => {
+    let count = 0;
+    for (const n of notifications) {
+      if (!n.is_read) count++;
+    }
+    return { unreadCount: count, recentNotifs: notifications.slice(0, 10) };
+  }, [notifications]);
 
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-        Добро пожаловать, {user?.full_name}
+        {t("dashboard.welcome")}, {user?.full_name}
       </h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
           icon={Users}
-          label="Сотрудники на смене сегодня"
+          label={t("dashboard.staffOnShift")}
           value={String(todaySchedules.length)}
           color="blue"
         />
         <SummaryCard
           icon={CheckSquare}
-          label="Незавершённые задачи"
+          label={t("dashboard.pendingTasks")}
           value={String(pendingTasks.length)}
           color="orange"
         />
         <SummaryCard
           icon={Wallet}
-          label="Расходы за месяц"
+          label={t("dashboard.monthlyExpenses")}
           value={summary ? formatMoney(summary.total_expenses) : "—"}
           color="red"
         />
         <SummaryCard
           icon={Bell}
-          label="Непрочитанные уведомления"
-          value={String(unreadNotifs.length)}
+          label={t("dashboard.unreadNotifications")}
+          value={String(unreadCount)}
           color="purple"
         />
       </div>
@@ -82,21 +90,21 @@ export default function Dashboard() {
       <div className="flex gap-3">
         <Button onClick={() => navigate("/tasks")}>
           <Plus size={16} />
-          Создать задачу
+          {t("dashboard.createTask")}
         </Button>
         <Button variant="secondary" onClick={() => navigate("/finance")}>
           <Receipt size={16} />
-          Добавить расход
+          {t("dashboard.addExpense")}
         </Button>
       </div>
 
       {/* Recent activity */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          Последние события
+          {t("dashboard.recentEvents")}
         </h2>
         {recentNotifs.length === 0 ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400">Нет событий</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{t("dashboard.noEvents")}</div>
         ) : (
           <div className="space-y-1">
             {recentNotifs.map((n) => (

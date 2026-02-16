@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Calendar, Trash2 } from "lucide-react";
@@ -7,19 +7,13 @@ import { ru } from "date-fns/locale";
 import { getTasks, createTask, updateTask, deleteTask } from "../../api/tasks";
 import { getUsers } from "../../api/users";
 import type { Task, TaskStatus, TaskPriority } from "../../types";
+import { PRIORITY_COLOR } from "../../utils/constants";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Modal from "../../components/ui/Modal";
 import Badge from "../../components/ui/Badge";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
-
-const priorityColor: Record<TaskPriority, "gray" | "blue" | "orange" | "red"> = {
-  low: "gray",
-  medium: "blue",
-  high: "orange",
-  urgent: "red",
-};
 
 const columns: { status: TaskStatus; label: string }[] = [
   { status: "pending", label: "tasks.pending" },
@@ -64,6 +58,7 @@ export default function Tasks() {
   });
 
   const staffList = users.filter((u) => u.role !== "owner");
+  const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
   const createMut = useMutation({
     mutationFn: createTask,
@@ -160,7 +155,7 @@ export default function Tasks() {
       <div className="flex flex-col sm:flex-row gap-3">
         <Select
           options={[
-            { value: "", label: "Все сотрудники" },
+            { value: "", label: t("staff.allStaff") },
             ...staffList.map((u) => ({ value: String(u.id), label: u.full_name })),
           ]}
           value={assigneeFilter}
@@ -169,7 +164,7 @@ export default function Tasks() {
         />
         <Select
           options={[
-            { value: "", label: "Все приоритеты" },
+            { value: "", label: t("tasks.allPriorities") },
             { value: "low", label: t("tasks.low") },
             { value: "medium", label: t("tasks.medium") },
             { value: "high", label: t("tasks.high") },
@@ -200,7 +195,7 @@ export default function Tasks() {
                   <TaskCard
                     key={task.id}
                     task={task}
-                    users={users}
+                    userById={userById}
                     onClick={() => openEdit(task)}
                     onStatusChange={changeStatus}
                     t={t}
@@ -215,7 +210,7 @@ export default function Tasks() {
       {/* Mobile: simple list */}
       <div className="md:hidden space-y-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">Нет задач</div>
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("tasks.noTasks")}</div>
         ) : (
           filtered.map((task) => (
             <TaskCard
@@ -238,27 +233,27 @@ export default function Tasks() {
       >
         <div className="space-y-4">
           <Input
-            label="Название"
+            label={t("tasks.taskName")}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             required
           />
           <Input
-            label="Описание"
+            label={t("tasks.description")}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
           <Select
-            label="Исполнитель"
+            label={t("tasks.assignee")}
             options={[
-              { value: "", label: "Выберите сотрудника" },
+              { value: "", label: t("tasks.selectAssignee") },
               ...staffList.map((u) => ({ value: String(u.id), label: u.full_name })),
             ]}
             value={form.assigned_to}
             onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
           />
           <Select
-            label="Приоритет"
+            label={t("tasks.priority")}
             options={[
               { value: "low", label: t("tasks.low") },
               { value: "medium", label: t("tasks.medium") },
@@ -269,7 +264,7 @@ export default function Tasks() {
             onChange={(e) => setForm({ ...form, priority: e.target.value as TaskPriority })}
           />
           <Input
-            label="Срок"
+            label={t("tasks.dueDate")}
             type="date"
             value={form.due_date}
             onChange={(e) => setForm({ ...form, due_date: e.target.value })}
@@ -300,18 +295,18 @@ export default function Tasks() {
 
 function TaskCard({
   task,
-  users,
+  userById,
   onClick,
   onStatusChange,
   t,
 }: {
   task: Task;
-  users: { id: number; full_name: string }[];
+  userById: Map<number, { id: number; full_name: string }>;
   onClick: () => void;
   onStatusChange: (task: Task, status: TaskStatus) => void;
   t: (key: string) => string;
 }) {
-  const assignee = users.find((u) => u.id === task.assigned_to);
+  const assignee = userById.get(task.assigned_to);
   const isOverdue = task.due_date && task.status !== "done" && isPast(parseISO(task.due_date));
 
   const nextStatus: Record<TaskStatus, TaskStatus | null> = {
@@ -334,7 +329,7 @@ function TaskCard({
         {task.title}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <Badge color={priorityColor[task.priority]}>
+        <Badge color={PRIORITY_COLOR[task.priority]}>
           {t(`tasks.${task.priority}`)}
         </Badge>
         {assignee && (
