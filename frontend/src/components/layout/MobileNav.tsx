@@ -33,7 +33,7 @@ export default function MobileNav() {
   const items = isAdmin ? ownerItems : staffItems;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 glass-header border-t border-b-0 lg:hidden">
       <div className="flex justify-around py-2">
         {items.map((item) => (
           <NavLink
@@ -41,10 +41,10 @@ export default function MobileNav() {
             to={item.to}
             end={item.to === "/"}
             className={({ isActive }) =>
-              `p-2 rounded-lg transition-colors ${
+              `p-2 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-gray-500 dark:text-gray-400"
+                  ? "mobile-nav-active text-blue-400"
+                  : "text-gray-500 hover:text-gray-300"
               }`
             }
           >

@@ -53,8 +53,8 @@ export default function Dashboard() {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+    <div className="space-y-6 animate-fade-in">
+      <h1 className="text-xl font-semibold text-white">
         {t("dashboard.welcome")}, {user?.full_name}
       </h1>
 
@@ -65,24 +65,28 @@ export default function Dashboard() {
           label={t("dashboard.staffOnShift")}
           value={String(todaySchedules.length)}
           color="blue"
+          delay={0}
         />
         <SummaryCard
           icon={CheckSquare}
           label={t("dashboard.pendingTasks")}
           value={String(pendingTasks.length)}
           color="orange"
+          delay={1}
         />
         <SummaryCard
           icon={Wallet}
           label={t("dashboard.monthlyExpenses")}
           value={summary ? formatMoney(summary.total_expenses) : "—"}
           color="red"
+          delay={2}
         />
         <SummaryCard
           icon={Bell}
           label={t("dashboard.unreadNotifications")}
           value={String(unreadCount)}
           color="purple"
+          delay={3}
         />
       </div>
 
@@ -99,25 +103,25 @@ export default function Dashboard() {
       </div>
 
       {/* Recent activity */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+      <div className="glass-card rounded-xl p-5">
+        <h2 className="text-sm font-semibold text-gray-300 mb-3">
           {t("dashboard.recentEvents")}
         </h2>
         {recentNotifs.length === 0 ? (
-          <div className="text-sm text-gray-500 dark:text-gray-400">{t("dashboard.noEvents")}</div>
+          <div className="text-sm text-gray-500">{t("dashboard.noEvents")}</div>
         ) : (
           <div className="space-y-1">
             {recentNotifs.map((n) => (
               <div
                 key={n.id}
-                className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900"
+                className="flex items-start gap-3 p-2 rounded-lg hover:bg-white/[0.03] transition-colors"
               >
-                <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${n.is_read ? "bg-gray-300 dark:bg-gray-600" : "bg-blue-500"}`} />
+                <div className={`mt-0.5 w-2 h-2 rounded-full shrink-0 ${n.is_read ? "bg-gray-600" : "bg-blue-400 shadow-[0_0_6px_rgba(59,130,246,0.5)]"}`} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-gray-900 dark:text-white">{n.title}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{n.message}</div>
+                  <div className="text-sm text-white">{n.title}</div>
+                  <div className="text-xs text-gray-500 truncate">{n.message}</div>
                 </div>
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                <span className="text-[10px] text-gray-600 whitespace-nowrap">
                   {formatDistanceToNow(parseISO(n.created_at), { addSuffix: true, locale: ru })}
                 </span>
               </div>
@@ -129,30 +133,49 @@ export default function Dashboard() {
   );
 }
 
-function SummaryCard({ icon: Icon, label, value, color }: {
+const glowColors = {
+  blue: "rgba(59, 130, 246, 0.15)",
+  orange: "rgba(249, 115, 22, 0.15)",
+  red: "rgba(239, 68, 68, 0.15)",
+  purple: "rgba(139, 92, 246, 0.15)",
+};
+
+const iconBg = {
+  blue: "bg-blue-500/15 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]",
+  orange: "bg-orange-500/15 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]",
+  red: "bg-red-500/15 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]",
+  purple: "bg-purple-500/15 text-purple-400 shadow-[0_0_15px_rgba(139,92,246,0.3)]",
+};
+
+function SummaryCard({ icon: Icon, label, value, color, delay }: {
   icon: typeof Users;
   label: string;
   value: string;
   color: "blue" | "orange" | "red" | "purple";
+  delay: number;
 }) {
-  const colorClasses = {
-    blue: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950",
-    orange: "text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950",
-    red: "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950",
-    purple: "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950",
-  };
-
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+    <div
+      className="glass-card glow-border rounded-xl p-4 animate-slide-up"
+      style={{
+        animationDelay: `${delay * 0.1}s`,
+        animationFillMode: "both",
+      }}
+    >
       <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+        <div className={`p-2.5 rounded-xl ${iconBg[color]}`}>
           <Icon size={20} />
         </div>
         <div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">{label}</div>
+          <div className="text-2xl font-bold stat-value">{value}</div>
+          <div className="text-xs text-gray-500">{label}</div>
         </div>
       </div>
+      {/* Bottom glow line */}
+      <div
+        className="mt-3 h-[2px] rounded-full opacity-60"
+        style={{ background: `linear-gradient(90deg, transparent, ${glowColors[color]}, transparent)` }}
+      />
     </div>
   );
 }

@@ -23,12 +23,12 @@ export default function ActionCard({ actions }: ActionCardProps) {
         return (
           <div
             key={idx}
-            className="flex items-start gap-2 p-2.5 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950"
+            className="flex items-start gap-2 p-2.5 rounded-lg border border-green-500/20 bg-green-500/10"
           >
-            <div className="p-1 rounded bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 shrink-0 mt-0.5">
+            <div className="p-1 rounded bg-green-500/15 text-green-400 shrink-0 mt-0.5">
               <Icon size={14} />
             </div>
-            <div className="text-xs text-green-800 dark:text-green-300">
+            <div className="text-xs text-green-300">
               {description}
             </div>
           </div>

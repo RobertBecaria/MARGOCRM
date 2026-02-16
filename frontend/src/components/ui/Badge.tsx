@@ -8,14 +8,14 @@ interface BadgeProps {
 }
 
 const colorClasses: Record<BadgeColor, string> = {
-  blue: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
-  green: "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
-  red: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
-  orange: "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
-  purple: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
-  cyan: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300",
-  pink: "bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300",
-  gray: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  blue: "bg-blue-500/15 text-blue-400 border border-blue-500/20",
+  green: "bg-green-500/15 text-green-400 border border-green-500/20",
+  red: "bg-red-500/15 text-red-400 border border-red-500/20",
+  orange: "bg-orange-500/15 text-orange-400 border border-orange-500/20",
+  purple: "bg-purple-500/15 text-purple-400 border border-purple-500/20",
+  cyan: "bg-cyan-500/15 text-cyan-400 border border-cyan-500/20",
+  pink: "bg-pink-500/15 text-pink-400 border border-pink-500/20",
+  gray: "bg-white/10 text-gray-400 border border-white/10",
 };
 
 export default function Badge({ color = "gray", children }: BadgeProps) {

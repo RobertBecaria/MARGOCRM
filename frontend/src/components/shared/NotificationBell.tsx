@@ -33,26 +33,26 @@ export default function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all relative"
       >
         <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 notification-pulse">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+        <div className="absolute right-0 top-full mt-1 w-80 glass-modal rounded-xl z-50 overflow-hidden animate-scale-in">
+          <div className="px-4 py-3 border-b border-white/[0.08]">
+            <span className="text-sm font-semibold text-white">
               Уведомления
             </span>
           </div>
           <div className="max-h-64 overflow-y-auto">
             {recent.length === 0 ? (
-              <div className="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              <div className="px-4 py-6 text-center text-sm text-gray-500">
                 Нет новых уведомлений
               </div>
             ) : (
@@ -60,22 +60,22 @@ export default function NotificationBell() {
                 <button
                   key={n.id}
                   onClick={() => { if (!n.is_read) markAsRead(n.id); }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 last:border-0 ${
-                    !n.is_read ? "bg-blue-50/50 dark:bg-blue-950/30" : ""
+                  className={`w-full text-left px-4 py-3 hover:bg-white/[0.05] border-b border-white/[0.05] last:border-0 transition-colors ${
+                    !n.is_read ? "bg-blue-500/[0.05]" : ""
                   }`}
                 >
                   <div className="flex items-start gap-2">
                     {!n.is_read && (
-                      <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                      <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-400 shrink-0 shadow-[0_0_6px_rgba(59,130,246,0.5)]" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <div className="text-sm font-medium text-white truncate">
                         {n.title}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div className="text-xs text-gray-500 truncate">
                         {n.message}
                       </div>
-                      <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                      <div className="text-[10px] text-gray-600 mt-0.5">
                         {formatDistanceToNow(parseISO(n.created_at), { addSuffix: true, locale: ru })}
                       </div>
                     </div>
@@ -87,7 +87,7 @@ export default function NotificationBell() {
           <Link
             to="/notifications"
             onClick={() => setOpen(false)}
-            className="block px-4 py-2.5 text-center text-xs text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 border-t border-gray-200 dark:border-gray-800"
+            className="block px-4 py-2.5 text-center text-xs text-blue-400 hover:bg-white/[0.05] border-t border-white/[0.08] transition-colors"
           >
             Все уведомления
           </Link>

@@ -55,7 +55,7 @@ export default function Notifications() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-white">
           {t("notifications.title")}
         </h1>
         {hasUnread && (
@@ -72,8 +72,8 @@ export default function Notifications() {
             onClick={() => setTypeFilter(f.value)}
             className={`px-3 py-1.5 text-xs rounded-full font-medium whitespace-nowrap transition-colors ${
               typeFilter === f.value
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
-                : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                ? "bg-blue-500/15 text-blue-400 border border-blue-500/20"
+                : "bg-white/10 text-gray-400 hover:bg-white/15"
             }`}
           >
             {t(f.labelKey)}
@@ -82,7 +82,7 @@ export default function Notifications() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-12 text-gray-500">
           {t("notifications.empty")}
         </div>
       ) : (
@@ -95,24 +95,24 @@ export default function Notifications() {
                 onClick={() => { if (!n.is_read) markReadMut.mutate(n.id); }}
                 className={`w-full text-left flex items-start gap-3 p-3 rounded-lg transition-colors ${
                   n.is_read
-                    ? "hover:bg-gray-50 dark:hover:bg-gray-900"
-                    : "bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                    ? "hover:bg-white/[0.03]"
+                    : "bg-blue-500/[0.05] hover:bg-blue-500/[0.08]"
                 }`}
               >
-                <div className={`mt-0.5 p-1.5 rounded-lg ${n.is_read ? "bg-gray-100 dark:bg-gray-800 text-gray-400" : "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"}`}>
+                <div className={`mt-0.5 p-1.5 rounded-lg ${n.is_read ? "bg-white/10 text-gray-500" : "bg-blue-500/15 text-blue-400"}`}>
                   <Icon size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${n.is_read ? "text-gray-600 dark:text-gray-400" : "text-gray-900 dark:text-white"}`}>
+                    <span className={`text-sm font-medium ${n.is_read ? "text-gray-400" : "text-white"}`}>
                       {n.title}
                     </span>
                     {!n.is_read && <span className="w-2 h-2 rounded-full bg-blue-500" />}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+                  <div className="text-xs text-gray-500 mt-0.5 truncate">
                     {n.message}
                   </div>
-                  <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                  <div className="text-[10px] text-gray-600 mt-1">
                     {formatDistanceToNow(parseISO(n.created_at), { addSuffix: true, locale: ru })}
                   </div>
                 </div>

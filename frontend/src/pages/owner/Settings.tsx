@@ -56,14 +56,14 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-6 max-w-md">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+    <div className="space-y-6 max-w-md animate-fade-in">
+      <h1 className="text-xl font-semibold text-white">
         {t("nav.settings")}
       </h1>
 
       {/* Profile */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <div className="glass-card rounded-xl p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-300">
           {t("settings.profile")}
         </h2>
         <Input
@@ -82,7 +82,7 @@ export default function Settings() {
             {t("common.save")}
           </Button>
           {saved && (
-            <span className="text-sm text-green-600 dark:text-green-400">
+            <span className="text-sm text-green-400">
               {t("common.success")}
             </span>
           )}
@@ -90,8 +90,8 @@ export default function Settings() {
       </div>
 
       {/* Change Password */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <div className="glass-card rounded-xl p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-300">
           {t("settings.changePassword")}
         </h2>
         <Input
@@ -121,7 +121,7 @@ export default function Settings() {
             {t("settings.changePassword")}
           </Button>
           {pwdMsg && (
-            <span className={`text-sm ${pwdMsg.type === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+            <span className={`text-sm ${pwdMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
               {pwdMsg.text}
             </span>
           )}
@@ -129,23 +129,25 @@ export default function Settings() {
       </div>
 
       {/* Theme */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+      <div className="glass-card rounded-xl p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-gray-300">
           {t("settings.theme")}
         </h2>
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+          <span className="text-sm text-gray-400">
             {dark ? t("settings.darkTheme") : t("settings.lightTheme")}
           </span>
           <button
             onClick={toggle}
-            className={`relative w-11 h-6 rounded-full transition-colors ${
-              dark ? "bg-blue-600" : "bg-gray-300"
+            className={`relative w-12 h-6 rounded-full transition-all duration-300 ${
+              dark
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 shadow-[0_0_12px_rgba(59,130,246,0.4)]"
+                : "bg-gray-600"
             }`}
           >
             <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                dark ? "translate-x-5" : ""
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 shadow-md ${
+                dark ? "translate-x-6" : ""
               }`}
             />
           </button>

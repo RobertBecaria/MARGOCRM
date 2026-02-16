@@ -163,7 +163,7 @@ export default function Schedules() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-white">
           {t("schedule.title")}
         </h1>
         <Button onClick={() => openCreate()}>
@@ -177,16 +177,16 @@ export default function Schedules() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentWeek(addWeeks(currentWeek, -1))}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-white/10"
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[180px] text-center">
+          <span className="text-sm font-medium text-white min-w-[180px] text-center">
             {format(weekStart, "d MMM", { locale: ru })} — {format(weekEnd, "d MMM yyyy", { locale: ru })}
           </span>
           <button
             onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="p-1.5 rounded-lg text-gray-500 hover:bg-white/10"
           >
             <ChevronRight size={18} />
           </button>
@@ -203,21 +203,21 @@ export default function Schedules() {
       </div>
 
       {/* Desktop: weekly grid */}
-      <div className="hidden md:grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
+      <div className="hidden md:grid grid-cols-7 gap-px bg-white/10 rounded-xl overflow-hidden border border-white/[0.08]">
         {days.map((day) => {
           const isToday = isSameDay(day, new Date());
           const shifts = getShiftsForDay(day);
           return (
             <div
               key={day.toISOString()}
-              className="bg-white dark:bg-gray-950 min-h-[140px] p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="bg-white/[0.02] min-h-[140px] p-2 cursor-pointer hover:bg-white/[0.03]"
               onClick={() => openCreate(day)}
             >
               <div
                 className={`text-xs font-medium mb-2 ${
                   isToday
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-gray-500 dark:text-gray-400"
+                    ? "text-blue-400"
+                    : "text-gray-500"
                 }`}
               >
                 {format(day, "EEE, d MMM", { locale: ru })}
@@ -229,16 +229,16 @@ export default function Schedules() {
                     <div
                       key={s.id}
                       onClick={(e) => { e.stopPropagation(); openEdit(s); }}
-                      className="text-xs p-1.5 rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900"
+                      className="text-xs p-1.5 rounded-md bg-blue-500/10 border border-blue-500/20 cursor-pointer hover:bg-blue-500/20"
                     >
-                      <div className="font-medium text-gray-900 dark:text-white truncate">
+                      <div className="font-medium text-white truncate">
                         {info?.user.full_name || `ID ${s.user_id}`}
                       </div>
-                      <div className="text-gray-500 dark:text-gray-400">
+                      <div className="text-gray-500">
                         {s.shift_start.slice(0, 5)}–{s.shift_end.slice(0, 5)}
                       </div>
                       {s.location && (
-                        <div className="text-gray-400 dark:text-gray-500 truncate">
+                        <div className="text-gray-600 truncate">
                           {s.location}
                         </div>
                       )}
@@ -260,13 +260,13 @@ export default function Schedules() {
             <div key={day.toISOString()}>
               <div
                 className={`text-sm font-medium mb-1 ${
-                  isToday ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"
+                  isToday ? "text-blue-400" : "text-gray-300"
                 }`}
               >
                 {format(day, "EEEE, d MMMM", { locale: ru })}
               </div>
               {shifts.length === 0 ? (
-                <div className="text-xs text-gray-400 dark:text-gray-500 py-1">—</div>
+                <div className="text-xs text-gray-600 py-1">—</div>
               ) : (
                 <div className="space-y-2">
                   {shifts.map((s) => {
@@ -275,17 +275,17 @@ export default function Schedules() {
                       <div
                         key={s.id}
                         onClick={() => openEdit(s)}
-                        className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3 cursor-pointer"
+                        className="glass-card rounded-lg p-3 cursor-pointer"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">
+                          <span className="font-medium text-sm text-white">
                             {info?.user.full_name || `ID ${s.user_id}`}
                           </span>
                           <Badge color={s.status === "completed" ? "green" : s.status === "cancelled" ? "red" : "blue"}>
                             {t(`schedule.${s.status}`)}
                           </Badge>
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <div className="text-xs text-gray-500 mt-1">
                           {s.shift_start.slice(0, 5)}–{s.shift_end.slice(0, 5)} &middot; {s.location}
                         </div>
                       </div>

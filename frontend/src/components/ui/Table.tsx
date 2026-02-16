@@ -7,21 +7,21 @@ interface TableProps {
 
 export function Table({ headers, children }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+    <div className="overflow-x-auto rounded-xl glass-card">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+          <tr className="border-b border-white/[0.06]">
             {headers.map((h) => (
               <th
                 key={h}
-                className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400"
+                className="text-left px-4 py-3 font-medium text-gray-500"
               >
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-800 bg-white dark:bg-gray-950">
+        <tbody className="divide-y divide-white/[0.04]">
           {children}
         </tbody>
       </table>
@@ -31,7 +31,7 @@ export function Table({ headers, children }: TableProps) {
 
 export function Td({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <td className={`px-4 py-3 text-gray-900 dark:text-gray-100 ${className}`}>
+    <td className={`px-4 py-3 text-gray-200 ${className}`}>
       {children}
     </td>
   );

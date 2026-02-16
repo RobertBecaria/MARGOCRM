@@ -19,7 +19,7 @@ export default function ChatMessage({ role, content, timestamp, actions }: ChatM
           className={`px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
             isUser
               ? "bg-blue-600 text-white rounded-br-sm"
-              : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-bl-sm"
+              : "bg-white/10 text-white rounded-bl-sm"
           }`}
         >
           {content}
@@ -27,7 +27,7 @@ export default function ChatMessage({ role, content, timestamp, actions }: ChatM
 
         {actions && actions.length > 0 && <ActionCard actions={actions} />}
 
-        <div className={`text-[10px] text-gray-400 dark:text-gray-500 ${isUser ? "text-right" : "text-left"}`}>
+        <div className={`text-[10px] text-gray-600 ${isUser ? "text-right" : "text-left"}`}>
           {(() => {
             try {
               return format(parseISO(timestamp), "HH:mm", { locale: ru });

@@ -38,11 +38,11 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
 
   if (fullScreen) {
     return (
-      <div className="flex flex-col h-[calc(100vh-7rem)]">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="flex flex-col h-[calc(100vh-7rem)] animate-fade-in">
+        <h1 className="text-xl font-semibold text-white mb-4">
           {t("ai.title")}
         </h1>
-        <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="flex-1 flex flex-col glass-card rounded-xl overflow-hidden">
           <MessageArea
             messages={messages}
             isTyping={isTyping}
@@ -67,7 +67,7 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 lg:bottom-6 right-4 z-40 p-3 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-colors"
+          className="fixed bottom-20 lg:bottom-6 right-4 z-40 p-3.5 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white chat-fab"
         >
           <Bot size={22} />
         </button>
@@ -75,18 +75,18 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-0 right-0 z-40 w-full sm:w-[380px] h-[70vh] sm:h-[500px] sm:bottom-4 sm:right-4 flex flex-col bg-white dark:bg-gray-900 sm:rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+        <div className="fixed bottom-0 right-0 z-40 w-full sm:w-[380px] h-[70vh] sm:h-[500px] sm:bottom-4 sm:right-4 flex flex-col glass-modal sm:rounded-2xl overflow-hidden animate-scale-in">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-2">
-              <Bot size={18} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              <Bot size={18} className="text-blue-400" />
+              <span className="text-sm font-semibold text-white">
                 {t("ai.title")}
               </span>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
             >
               <X size={16} />
             </button>
@@ -125,7 +125,7 @@ function MessageArea({
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-3">
       {messages.length === 0 && (
-        <div className="text-center text-sm text-gray-400 dark:text-gray-500 py-8">
+        <div className="text-center text-sm text-gray-500 py-8">
           {t("ai.placeholder")}
         </div>
       )}
@@ -139,7 +139,7 @@ function MessageArea({
         />
       ))}
       {isTyping && (
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-2 text-sm text-blue-400">
           <Loader2 size={14} className="animate-spin" />
           {t("ai.thinking")}
         </div>
@@ -163,19 +163,19 @@ function InputBar({
   t: (k: string) => string;
 }) {
   return (
-    <div className="border-t border-gray-200 dark:border-gray-800 p-3 flex gap-2">
+    <div className="border-t border-white/[0.08] p-3 flex gap-2">
       <input
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder={t("ai.placeholder")}
-        className="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex-1 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
       />
       <button
         onClick={onSend}
         disabled={!input.trim()}
-        className="p-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="p-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-500 hover:to-purple-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all btn-glow"
       >
         <Send size={16} />
       </button>

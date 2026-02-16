@@ -42,18 +42,18 @@ export default function MyDay() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <h1 className="text-xl font-semibold text-white">
         {t("nav.myDay")}
       </h1>
 
       {/* Today's schedule */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
           <Calendar size={16} />
           {format(new Date(), "EEEE, d MMMM", { locale: ru })}
         </h2>
         {schedules.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-sm text-gray-500 dark:text-gray-400">
+          <div className="glass-card rounded-xl p-4 text-sm text-gray-500">
             {t("schedule.noShiftsToday")}
           </div>
         ) : (
@@ -61,14 +61,14 @@ export default function MyDay() {
             {schedules.map((s) => (
               <div
                 key={s.id}
-                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4"
+                className="glass-card rounded-xl p-4"
               >
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                <div className="text-sm font-medium text-white">
                   {s.shift_start.slice(0, 5)} — {s.shift_end.slice(0, 5)}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{s.location}</div>
+                <div className="text-xs text-gray-500 mt-1">{s.location}</div>
                 {s.notes && (
-                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{s.notes}</div>
+                  <div className="text-xs text-gray-600 mt-0.5">{s.notes}</div>
                 )}
               </div>
             ))}
@@ -78,11 +78,11 @@ export default function MyDay() {
 
       {/* Active tasks */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <h2 className="text-sm font-semibold text-gray-300 mb-2">
           {t("tasks.activeTasks")} ({activeTasks.length})
         </h2>
         {activeTasks.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-sm text-gray-500 dark:text-gray-400">
+          <div className="glass-card rounded-xl p-4 text-sm text-gray-500">
             {t("tasks.noActiveTasks")}
           </div>
         ) : (
@@ -90,11 +90,11 @@ export default function MyDay() {
             {activeTasks.map((task) => (
               <div
                 key={task.id}
-                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4"
+                className="glass-card rounded-xl p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    <div className="text-sm font-medium text-white">
                       {task.title}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
@@ -111,8 +111,8 @@ export default function MyDay() {
                         disabled={task.status === status}
                         className={`text-xs px-2 py-1 rounded-md transition-colors ${
                           task.status === status
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium"
-                            : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            ? "bg-blue-500/15 text-blue-400 font-medium"
+                            : "text-gray-500 hover:bg-white/10"
                         }`}
                       >
                         {t(STATUS_LABEL_KEYS[status])}
@@ -129,16 +129,16 @@ export default function MyDay() {
       {/* Quick AI link */}
       <Link
         to="/ai-chat"
-        className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        className="flex items-center gap-3 glass-card rounded-xl p-4 hover:bg-white/[0.05] transition-colors"
       >
-        <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+        <div className="p-2 rounded-lg bg-purple-500/15 text-purple-400">
           <Bot size={20} />
         </div>
         <div>
-          <div className="text-sm font-medium text-gray-900 dark:text-white">
+          <div className="text-sm font-medium text-white">
             {t("ai.askAssistant")}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-xs text-gray-500">
             {t("ai.placeholder")}
           </div>
         </div>

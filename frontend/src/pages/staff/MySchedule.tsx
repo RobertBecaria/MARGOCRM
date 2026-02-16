@@ -73,23 +73,23 @@ export default function MySchedule() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <h1 className="text-xl font-semibold text-white">
         {t("nav.mySchedule")}
       </h1>
 
       <div className="flex items-center gap-2">
         <button
           onClick={() => setCurrentWeek(addWeeks(currentWeek, -1))}
-          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="p-1.5 rounded-lg text-gray-500 hover:bg-white/10"
         >
           <ChevronLeft size={18} />
         </button>
-        <span className="text-sm font-medium text-gray-900 dark:text-white min-w-[180px] text-center">
+        <span className="text-sm font-medium text-white min-w-[180px] text-center">
           {format(weekStart, "d MMM", { locale: ru })} — {format(weekEnd, "d MMM yyyy", { locale: ru })}
         </span>
         <button
           onClick={() => setCurrentWeek(addWeeks(currentWeek, 1))}
-          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="p-1.5 rounded-lg text-gray-500 hover:bg-white/10"
         >
           <ChevronRight size={18} />
         </button>
@@ -106,30 +106,30 @@ export default function MySchedule() {
             <div key={day.toISOString()}>
               <div
                 className={`text-sm font-medium mb-1 ${
-                  isToday ? "text-blue-600 dark:text-blue-400" : "text-gray-700 dark:text-gray-300"
+                  isToday ? "text-blue-400" : "text-gray-300"
                 }`}
               >
                 {format(day, "EEEE, d MMMM", { locale: ru })}
               </div>
               {shifts.length === 0 ? (
-                <div className="text-xs text-gray-400 dark:text-gray-500 py-1">—</div>
+                <div className="text-xs text-gray-600 py-1">—</div>
               ) : (
                 <div className="space-y-2">
                   {shifts.map((s) => (
                     <div
                       key={s.id}
-                      className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-3"
+                      className="glass-card rounded-lg p-3"
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="text-sm font-medium text-white">
                             {s.shift_start.slice(0, 5)}–{s.shift_end.slice(0, 5)}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          <div className="text-xs text-gray-500 mt-0.5">
                             {s.location}
                           </div>
                           {s.notes && (
-                            <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                            <div className="text-xs text-gray-600 mt-0.5">
                               {s.notes}
                             </div>
                           )}

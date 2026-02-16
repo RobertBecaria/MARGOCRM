@@ -143,7 +143,7 @@ export default function Tasks() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-white">
           {t("tasks.title")}
         </h1>
         <Button onClick={openCreate}>
@@ -183,10 +183,10 @@ export default function Tasks() {
           return (
             <div key={col.status} className="space-y-2">
               <div className="flex items-center gap-2 mb-3">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <h2 className="text-sm font-semibold text-gray-300">
                   {t(col.label)}
                 </h2>
-                <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-full px-2 py-0.5">
+                <span className="text-xs text-gray-400 bg-white/10 rounded-full px-2 py-0.5">
                   {colTasks.length}
                 </span>
               </div>
@@ -210,7 +210,7 @@ export default function Tasks() {
       {/* Mobile: simple list */}
       <div className="md:hidden space-y-2">
         {filtered.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("tasks.noTasks")}</div>
+          <div className="text-center py-8 text-gray-500">{t("tasks.noTasks")}</div>
         ) : (
           filtered.map((task) => (
             <TaskCard
@@ -319,13 +319,13 @@ function TaskCard({
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-gray-900 rounded-lg border p-3 cursor-pointer hover:shadow-sm transition-shadow ${
+      className={`glass-card rounded-lg p-3 cursor-pointer hover:shadow-sm transition-shadow ${
         isOverdue
-          ? "border-red-300 dark:border-red-800"
-          : "border-gray-200 dark:border-gray-800"
+          ? "border-red-500/30"
+          : "border-white/[0.08]"
       }`}
     >
-      <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+      <div className="text-sm font-medium text-white mb-1">
         {task.title}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
@@ -333,12 +333,12 @@ function TaskCard({
           {t(`tasks.${task.priority}`)}
         </Badge>
         {assignee && (
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className="text-xs text-gray-500">
             {assignee.full_name}
           </span>
         )}
         {task.due_date && (
-          <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 dark:text-red-400" : "text-gray-400"}`}>
+          <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-400" : "text-gray-400"}`}>
             <Calendar size={12} />
             {format(parseISO(task.due_date), "d MMM", { locale: ru })}
           </span>
@@ -347,7 +347,7 @@ function TaskCard({
       {next && (
         <button
           onClick={(e) => { e.stopPropagation(); onStatusChange(task, next); }}
-          className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          className="mt-2 text-xs text-blue-400 hover:underline"
         >
           &rarr; {t(`tasks.${next === "in_progress" ? "inProgress" : next}`)}
         </button>

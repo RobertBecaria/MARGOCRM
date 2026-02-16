@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Sparkles } from "lucide-react";
 import { signup } from "../api/auth";
 import type { Role } from "../types";
 
@@ -54,29 +55,37 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center px-4 mesh-gradient-bg py-8">
+      {/* Floating orbs */}
+      <div className="orb animate-float-1 w-[400px] h-[400px] bg-purple-600 top-[5%] right-[10%]" />
+      <div className="orb animate-float-2 w-[350px] h-[350px] bg-blue-600 bottom-[5%] left-[10%]" />
+      <div className="orb animate-float-3 w-[200px] h-[200px] bg-cyan-500 top-[40%] left-[30%]" />
+
+      <div className="w-full max-w-sm relative z-10 animate-slide-up">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {t("app.name")}
-          </h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Sparkles size={24} className="text-blue-400 animate-glow-pulse" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+              {t("app.name")}
+            </h1>
+          </div>
+          <p className="text-sm text-gray-400">
             {t("auth.registerTitle")}
           </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 space-y-4"
+          className="glass-modal rounded-2xl p-6 space-y-4"
         >
           {error && (
-            <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+            <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="fullName" className="block text-sm font-medium text-gray-300 mb-1">
               {t("auth.fullName")}
             </label>
             <input
@@ -85,12 +94,12 @@ export default function Register() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
               {t("auth.email")}
             </label>
             <input
@@ -99,20 +108,20 @@ export default function Register() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
               placeholder="email@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-1">
               {t("auth.selectRole")}
             </label>
             <select
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value as Role)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-white glass-input focus:outline-none"
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -123,7 +132,7 @@ export default function Register() {
           </div>
 
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-300 mb-1">
               {t("staff.phone")}
             </label>
             <input
@@ -131,13 +140,13 @@ export default function Register() {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
               placeholder="+7 999 123-45-67"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
               {t("auth.password")}
             </label>
             <input
@@ -147,12 +156,12 @@ export default function Register() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
             />
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
               {t("auth.confirmPassword")}
             </label>
             <input
@@ -162,21 +171,21 @@ export default function Register() {
               minLength={6}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:from-blue-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed btn-glow"
           >
             {loading ? t("common.loading") : t("auth.register")}
           </button>
 
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-center text-sm text-gray-500">
             {t("auth.haveAccount")}{" "}
-            <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
+            <Link to="/login" className="text-blue-400 hover:text-blue-300 transition-colors">
               {t("auth.login")}
             </Link>
           </p>

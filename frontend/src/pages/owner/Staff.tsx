@@ -129,7 +129,7 @@ export default function Staff() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-white">
           {t("staff.title")}
         </h1>
         <Button onClick={openCreate}>
@@ -146,7 +146,7 @@ export default function Staff() {
             placeholder={t("common.search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 glass-input focus:outline-none"
           />
         </div>
         <Select
@@ -161,7 +161,7 @@ export default function Staff() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-12 text-gray-500">
           {t("staff.noStaff")}
         </div>
       ) : (
@@ -188,7 +188,7 @@ export default function Staff() {
                     <div className="flex gap-1">
                       <button
                         onClick={() => openEdit(user)}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/10"
                         title={t("common.edit")}
                       >
                         <Pencil size={15} />
@@ -196,7 +196,7 @@ export default function Staff() {
                       {user.is_active && (
                         <button
                           onClick={() => setConfirmId(user.id)}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          className="p-1.5 rounded-md text-gray-400 hover:text-red-400 hover:bg-red-500/10"
                           title={t("common.delete")}
                         >
                           <UserX size={15} />
@@ -214,17 +214,17 @@ export default function Staff() {
             {filtered.map((user) => (
               <div
                 key={user.id}
-                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-2"
+                className="glass-card rounded-xl p-4 space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 dark:text-white">
+                  <span className="font-medium text-white">
                     {user.full_name}
                   </span>
                   <Badge color={roleBadgeColor[user.role]}>
                     {t(`roles.${user.role}`)}
                   </Badge>
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                <div className="text-sm text-gray-500 space-y-1">
                   <div>{user.email}</div>
                   {user.phone && <div>{user.phone}</div>}
                 </div>
@@ -235,14 +235,14 @@ export default function Staff() {
                   <div className="flex gap-1">
                     <button
                       onClick={() => openEdit(user)}
-                      className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="p-1.5 rounded-md text-gray-400 hover:text-white"
                     >
                       <Pencil size={15} />
                     </button>
                     {user.is_active && (
                       <button
                         onClick={() => setConfirmId(user.id)}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-400"
                       >
                         <UserX size={15} />
                       </button>
@@ -314,7 +314,7 @@ export default function Staff() {
         onClose={() => setConfirmId(null)}
         title={t("common.confirm")}
       >
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-sm text-gray-400 mb-4">
           {t("staff.confirmDeactivate")}
         </p>
         <div className="flex gap-3 justify-end">

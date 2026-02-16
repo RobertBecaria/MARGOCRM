@@ -23,12 +23,12 @@ export default function MyPay() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <h1 className="text-xl font-semibold text-white">
         {t("nav.myPay")}
       </h1>
 
       {records.length === 0 ? (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-12 text-gray-500">
           {t("finance.noData")}
         </div>
       ) : (
@@ -61,20 +61,20 @@ export default function MyPay() {
             {records.map((r) => (
               <div
                 key={r.id}
-                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-2"
+                className="glass-card rounded-xl p-4 space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-gray-500">
                     {format(parseISO(r.period_start), "d MMM", { locale: ru })} — {format(parseISO(r.period_end), "d MMM", { locale: ru })}
                   </span>
                   <Badge color={r.status === "paid" ? "green" : "orange"}>
                     {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
                   </Badge>
                 </div>
-                <div className="text-lg font-bold text-gray-900 dark:text-white">
+                <div className="text-lg font-bold text-white">
                   {formatMoney(r.net_amount)}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 flex gap-3">
+                <div className="text-xs text-gray-500 flex gap-3">
                   <span>{t("finance.baseSalary")}: {formatMoney(r.base_salary)}</span>
                   <span>{t("finance.bonuses")}: {formatMoney(r.bonuses)}</span>
                   <span>{t("finance.deductions")}: {formatMoney(r.deductions)}</span>

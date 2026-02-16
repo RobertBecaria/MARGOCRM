@@ -32,10 +32,10 @@ export default function MyTasks() {
   if (tasks.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-xl font-semibold text-white">
           {t("nav.myTasks")}
         </h1>
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-12 text-gray-500">
           {t("tasks.noTasksToday")}
         </div>
       </div>
@@ -44,7 +44,7 @@ export default function MyTasks() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <h1 className="text-xl font-semibold text-white">
         {t("nav.myTasks")}
       </h1>
 
@@ -55,19 +55,19 @@ export default function MyTasks() {
           return (
             <div
               key={task.id}
-              className={`bg-white dark:bg-gray-900 rounded-lg border p-4 ${
+              className={`glass-card rounded-lg border p-4 ${
                 isOverdue
-                  ? "border-red-300 dark:border-red-800"
-                  : "border-gray-200 dark:border-gray-800"
+                  ? "border-red-500/30"
+                  : "border-white/[0.08]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="text-sm font-medium text-white">
                     {task.title}
                   </div>
                   {task.description && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <div className="text-xs text-gray-500 mt-1">
                       {task.description}
                     </div>
                   )}
@@ -76,7 +76,7 @@ export default function MyTasks() {
                       {t(`tasks.${task.priority}`)}
                     </Badge>
                     {task.due_date && (
-                      <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 dark:text-red-400" : "text-gray-400"}`}>
+                      <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-400" : "text-gray-400"}`}>
                         <Calendar size={12} />
                         {format(parseISO(task.due_date), "d MMM", { locale: ru })}
                       </span>
@@ -92,8 +92,8 @@ export default function MyTasks() {
                       disabled={task.status === status}
                       className={`text-xs px-2 py-1 rounded-md transition-colors ${
                         task.status === status
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium"
-                          : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                          ? "bg-blue-500/15 text-blue-400 font-medium"
+                          : "text-gray-500 hover:bg-white/10"
                       }`}
                     >
                       {t(STATUS_LABEL_KEYS[status])}

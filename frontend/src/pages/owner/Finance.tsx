@@ -44,20 +44,20 @@ export default function Finance() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <h1 className="text-xl font-semibold text-white">
         {t("finance.title")}
       </h1>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800 overflow-x-auto">
+      <div className="flex border-b border-white/[0.06] overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
               activeTab === tab.id
-                ? "border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                ? "border-blue-400 text-blue-400"
+                : "border-transparent text-gray-500 hover:text-gray-300"
             }`}
           >
             {t(tab.label)}
@@ -119,7 +119,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
       </div>
 
       {records.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>
+        <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
         <div className="overflow-x-auto">
           <Table headers={[t("staff.employee"), t("finance.period"), t("finance.baseSalary"), t("finance.bonuses"), t("finance.deductions"), t("finance.total"), t("staff.status"), ""]}>
@@ -144,7 +144,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
                     {r.status === "pending" && (
                       <button
                         onClick={() => markPaidMut.mutate(r.id)}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        className="p-1.5 rounded-md text-gray-400 hover:text-green-400 hover:bg-white/10"
                         title={t("finance.paid")}
                       >
                         <Check size={15} />
@@ -208,7 +208,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       </div>
 
       {expenses.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>
+        <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
         <Table headers={[t("finance.category"), t("common.description"), t("finance.amount"), t("common.date")]}>
           {expenses.map((e) => (
@@ -266,7 +266,7 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
       </div>
 
       {incomeList.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>
+        <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
         <Table headers={[t("finance.source"), t("common.description"), t("finance.amount"), t("common.date")]}>
           {incomeList.map((i) => (
@@ -304,7 +304,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
   });
 
   if (isLoading) return <LoadingSpinner />;
-  if (!summary) return <div className="text-center py-8 text-gray-500 dark:text-gray-400">{t("finance.noData")}</div>;
+  if (!summary) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
 
   const pieData = summary.expense_by_category.map((item) => ({
     name: EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory] ? t(EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory]) : item.category,
@@ -315,21 +315,21 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
     <div className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">{t("finance.income")}</div>
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+        <div className="glass-card rounded-xl p-4">
+          <div className="text-sm text-gray-500">{t("finance.income")}</div>
+          <div className="text-2xl font-bold text-green-400 mt-1">
             {formatMoney(summary.total_income)}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">{t("finance.expenses")}</div>
-          <div className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+        <div className="glass-card rounded-xl p-4">
+          <div className="text-sm text-gray-500">{t("finance.expenses")}</div>
+          <div className="text-2xl font-bold text-red-400 mt-1">
             {formatMoney(summary.total_expenses + summary.total_payroll)}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">{t("finance.balance")}</div>
-          <div className={`text-2xl font-bold mt-1 ${summary.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+        <div className="glass-card rounded-xl p-4">
+          <div className="text-sm text-gray-500">{t("finance.balance")}</div>
+          <div className={`text-2xl font-bold mt-1 ${summary.balance >= 0 ? "text-green-400" : "text-red-400"}`}>
             {formatMoney(summary.balance)}
           </div>
         </div>
@@ -337,8 +337,8 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
 
       {/* Monthly bar chart */}
       {summary.monthly.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+        <div className="glass-card rounded-xl p-4">
+          <h3 className="text-sm font-medium text-gray-300 mb-4">
             {t("finance.monthlyChart")}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -357,8 +357,8 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
 
       {/* Expense pie chart */}
       {pieData.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+        <div className="glass-card rounded-xl p-4">
+          <h3 className="text-sm font-medium text-gray-300 mb-4">
             {t("finance.expensesByCategory")}
           </h3>
           <ResponsiveContainer width="100%" height={300}>

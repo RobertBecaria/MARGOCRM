@@ -14,6 +14,7 @@ import {
   CreditCard,
   Bot,
   X,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -51,23 +52,26 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     <>
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden animate-fade-in"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-60 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:z-auto ${
+        className={`fixed inset-y-0 left-0 z-40 w-60 glass-sidebar transform transition-transform duration-300 ease-out lg:translate-x-0 lg:static lg:z-auto ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between h-14 px-4 border-b border-gray-200 dark:border-gray-800">
-          <span className="text-lg font-bold text-gray-900 dark:text-white">
-            {t("app.name")}
-          </span>
+        <div className="flex items-center justify-between h-14 px-4 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <Sparkles size={18} className="text-blue-400 animate-glow-pulse" />
+            <span className="text-lg font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+              {t("app.name")}
+            </span>
+          </div>
           <button
             onClick={onClose}
-            className="lg:hidden p-1 rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="lg:hidden p-1 rounded-md text-gray-400 hover:bg-white/10"
           >
             <X size={20} />
           </button>
@@ -81,10 +85,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               end={item.to === "/"}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? "nav-glow-active text-blue-400"
+                    : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
                 }`
               }
             >
