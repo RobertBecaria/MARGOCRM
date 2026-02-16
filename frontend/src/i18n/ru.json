@@ -1,0 +1,106 @@
+{
+  "app": { "name": "Дом" },
+  "nav": {
+    "dashboard": "Главная",
+    "staff": "Персонал",
+    "schedules": "Расписание",
+    "tasks": "Задачи",
+    "finance": "Финансы",
+    "notifications": "Уведомления",
+    "settings": "Настройки",
+    "myDay": "Мой день",
+    "mySchedule": "Моё расписание",
+    "myTasks": "Мои задачи",
+    "myPay": "Мои выплаты",
+    "aiChat": "AI Ассистент"
+  },
+  "auth": {
+    "login": "Войти",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "loginTitle": "Вход в систему",
+    "logout": "Выйти"
+  },
+  "staff": {
+    "title": "Персонал",
+    "addStaff": "Добавить сотрудника",
+    "name": "Имя",
+    "role": "Должность",
+    "phone": "Телефон",
+    "email": "Почта",
+    "status": "Статус",
+    "active": "Активен",
+    "inactive": "Неактивен"
+  },
+  "roles": {
+    "owner": "Владелец",
+    "manager": "Менеджер",
+    "driver": "Водитель",
+    "chef": "Повар",
+    "assistant": "Ассистент",
+    "cleaner": "Клинер"
+  },
+  "schedule": {
+    "title": "Расписание",
+    "addShift": "Добавить смену",
+    "date": "Дата",
+    "start": "Начало",
+    "end": "Конец",
+    "location": "Место",
+    "scheduled": "Запланировано",
+    "completed": "Выполнено",
+    "cancelled": "Отменено"
+  },
+  "tasks": {
+    "title": "Задачи",
+    "addTask": "Новая задача",
+    "pending": "Ожидает",
+    "inProgress": "В работе",
+    "done": "Готово",
+    "low": "Низкий",
+    "medium": "Средний",
+    "high": "Высокий",
+    "urgent": "Срочный"
+  },
+  "finance": {
+    "title": "Финансы",
+    "payroll": "Зарплаты",
+    "expenses": "Расходы",
+    "income": "Доходы",
+    "reports": "Отчёты",
+    "total": "Итого",
+    "period": "Период",
+    "amount": "Сумма",
+    "paid": "Оплачено",
+    "pendingPayment": "Ожидает оплаты"
+  },
+  "ai": {
+    "title": "AI Ассистент",
+    "placeholder": "Напишите сообщение...",
+    "send": "Отправить",
+    "thinking": "Думаю...",
+    "actionCompleted": "Действие выполнено"
+  },
+  "notifications": {
+    "title": "Уведомления",
+    "markRead": "Прочитано",
+    "markAllRead": "Прочитать все",
+    "empty": "Нет новых уведомлений"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "search": "Поиск",
+    "filter": "Фильтр",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "confirm": "Подтвердить",
+    "back": "Назад",
+    "today": "Сегодня",
+    "thisWeek": "Эта неделя",
+    "thisMonth": "Этот месяц"
+  }
+}
