@@ -4,6 +4,8 @@ import "./i18n";
 import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
 import Staff from "./pages/owner/Staff";
+import Schedules from "./pages/owner/Schedules";
+import MySchedule from "./pages/staff/MySchedule";
 import { useAuth } from "./hooks/useAuth";
 
 // Placeholder pages — will be replaced with full implementations
@@ -16,13 +18,11 @@ function Placeholder({ title }: { title: string }) {
 }
 
 function Dashboard() { return <Placeholder title="Главная" />; }
-function Schedules() { return <Placeholder title="Расписание" />; }
 function Tasks() { return <Placeholder title="Задачи" />; }
 function Finance() { return <Placeholder title="Финансы" />; }
 function Notifications() { return <Placeholder title="Уведомления" />; }
 function SettingsPage() { return <Placeholder title="Настройки" />; }
 function MyDay() { return <Placeholder title="Мой день" />; }
-function MySchedule() { return <Placeholder title="Моё расписание" />; }
 function MyTasks() { return <Placeholder title="Мои задачи" />; }
 function MyPay() { return <Placeholder title="Мои выплаты" />; }
 function AiChat() { return <Placeholder title="AI Ассистент" />; }
