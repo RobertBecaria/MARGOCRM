@@ -3,7 +3,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, finance, notifications, schedules, tasks, users
+from app.routers import ai_chat, auth, finance, notifications, schedules, tasks, users
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ app.include_router(schedules.router)
 app.include_router(tasks.router)
 app.include_router(finance.router)
 app.include_router(notifications.router)
+app.include_router(ai_chat.router)
 
 
 @app.on_event("startup")
