@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Menu, Moon, Sun, LogOut } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useThemeStore } from "../../store/themeStore";
+import NotificationBell from "../shared/NotificationBell";
 
 const roleBadgeColors: Record<string, string> = {
   owner: "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
@@ -47,6 +48,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </span>
           </div>
         )}
+
+        <NotificationBell />
 
         <button
           onClick={toggle}
