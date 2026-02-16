@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import { useThemeStore } from "../../store/themeStore";
 import { updateUser } from "../../api/users";
+import { changePassword } from "../../api/auth";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 
@@ -16,6 +17,11 @@ export default function Settings() {
   const [phone, setPhone] = useState(user?.phone || "");
   const [saved, setSaved] = useState(false);
 
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [pwdMsg, setPwdMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   const saveMut = useMutation({
     mutationFn: () =>
       updateUser(user!.id, { full_name: name, phone: phone || null }),
@@ -25,6 +31,29 @@ export default function Settings() {
       setTimeout(() => setSaved(false), 2000);
     },
   });
+
+  const pwdMut = useMutation({
+    mutationFn: () => changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      setPwdMsg({ type: "success", text: t("settings.passwordChanged") });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setTimeout(() => setPwdMsg(null), 3000);
+    },
+    onError: () => {
+      setPwdMsg({ type: "error", text: t("settings.wrongPassword") });
+    },
+  });
+
+  function handleChangePassword() {
+    setPwdMsg(null);
+    if (newPassword !== confirmNewPassword) {
+      setPwdMsg({ type: "error", text: t("auth.passwordMismatch") });
+      return;
+    }
+    pwdMut.mutate();
+  }
 
   return (
     <div className="space-y-6 max-w-md">
@@ -55,6 +84,45 @@ export default function Settings() {
           {saved && (
             <span className="text-sm text-green-600 dark:text-green-400">
               {t("common.success")}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          {t("settings.changePassword")}
+        </h2>
+        <Input
+          label={t("settings.currentPassword")}
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+        />
+        <Input
+          label={t("settings.newPassword")}
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+        />
+        <Input
+          label={t("settings.confirmNewPassword")}
+          type="password"
+          value={confirmNewPassword}
+          onChange={(e) => setConfirmNewPassword(e.target.value)}
+        />
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleChangePassword}
+            loading={pwdMut.isPending}
+            disabled={!currentPassword || !newPassword || !confirmNewPassword}
+          >
+            {t("settings.changePassword")}
+          </Button>
+          {pwdMsg && (
+            <span className={`text-sm ${pwdMsg.type === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+              {pwdMsg.text}
             </span>
           )}
         </div>

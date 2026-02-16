@@ -216,7 +216,7 @@ export default function Tasks() {
             <TaskCard
               key={task.id}
               task={task}
-              users={users}
+              userById={userById}
               onClick={() => openEdit(task)}
               onStatusChange={changeStatus}
               t={t}

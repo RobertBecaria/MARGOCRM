@@ -7,6 +7,7 @@ import LoadingSpinner from "./components/shared/LoadingSpinner";
 import { useAuth } from "./hooks/useAuth";
 
 const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
 const Dashboard = lazy(() => import("./pages/owner/Dashboard"));
 const Staff = lazy(() => import("./pages/owner/Staff"));
 const Schedules = lazy(() => import("./pages/owner/Schedules"));
@@ -26,6 +27,12 @@ function LoginRoute() {
   return <Login />;
 }
 
+function RegisterRoute() {
+  const { isAuthenticated } = useAuth();
+  if (isAuthenticated) return <Navigate to="/" replace />;
+  return <Register />;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -42,6 +49,7 @@ function App() {
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route path="/login" element={<LoginRoute />} />
+            <Route path="/register" element={<RegisterRoute />} />
             <Route element={<Layout />}>
               {/* Owner/Manager routes */}
               <Route path="/" element={<Dashboard />} />

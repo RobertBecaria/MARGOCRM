@@ -1,5 +1,5 @@
 {
-  "app": { "name": "Дом" },
+  "app": { "name": "MARGO CRM" },
   "nav": {
     "dashboard": "Главная",
     "staff": "Персонал",
@@ -145,7 +145,13 @@
     "profile": "Профиль",
     "theme": "Тема",
     "darkTheme": "Тёмная тема",
-    "lightTheme": "Светлая тема"
+    "lightTheme": "Светлая тема",
+    "changePassword": "Сменить пароль",
+    "currentPassword": "Текущий пароль",
+    "newPassword": "Новый пароль",
+    "confirmNewPassword": "Подтвердите новый пароль",
+    "passwordChanged": "Пароль успешно изменён",
+    "wrongPassword": "Неверный текущий пароль"
   },
   "auth": {
     "login": "Войти",
@@ -153,7 +159,17 @@
     "password": "Пароль",
     "loginTitle": "Вход в систему",
     "logout": "Выйти",
-    "invalidCredentials": "Неверный email или пароль"
+    "invalidCredentials": "Неверный email или пароль",
+    "register": "Регистрация",
+    "registerTitle": "Создать аккаунт",
+    "fullName": "Полное имя",
+    "confirmPassword": "Подтвердите пароль",
+    "passwordMismatch": "Пароли не совпадают",
+    "emailTaken": "Этот email уже зарегистрирован",
+    "registerSuccess": "Аккаунт создан! Войдите в систему.",
+    "haveAccount": "Уже есть аккаунт?",
+    "noAccount": "Нет аккаунта?",
+    "selectRole": "Выберите должность"
   },
   "common": {
     "save": "Сохранить",

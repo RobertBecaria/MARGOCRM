@@ -49,3 +49,16 @@ class TokenResponse(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class PublicRegister(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
+    role: RoleEnum
+    phone: Optional[str] = None
+
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str

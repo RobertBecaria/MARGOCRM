@@ -1,15 +1,17 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const registered = (location.state as { registered?: boolean })?.registered;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -38,6 +40,12 @@ export default function Login() {
           onSubmit={handleSubmit}
           className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 space-y-4"
         >
+          {registered && (
+            <div className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg px-3 py-2">
+              {t("auth.registerSuccess")}
+            </div>
+          )}
+
           {error && (
             <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
               {error}
@@ -86,6 +94,13 @@ export default function Login() {
           >
             {isLoading ? t("common.loading") : t("auth.login")}
           </button>
+
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+            {t("auth.noAccount")}{" "}
+            <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:underline">
+              {t("auth.register")}
+            </Link>
+          </p>
         </form>
       </div>
     </div>

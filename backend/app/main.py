@@ -8,7 +8,7 @@ from app.routers import ai_chat, auth, finance, notifications, schedules, tasks,
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Dom — Household CRM", version="1.0.0")
+app = FastAPI(title="MARGO CRM", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,14 +38,14 @@ def seed_owner():
         owner = db.query(User).filter(User.role == RoleEnum.owner).first()
         if not owner:
             owner = User(
-                email="owner@dom.app",
-                password_hash=hash_password("owner123"),
-                full_name="Владелец",
+                email="margo@margocrm.ru",
+                password_hash=hash_password("X17resto1"),
+                full_name="Margo",
                 role=RoleEnum.owner,
             )
             db.add(owner)
             db.commit()
-            logger.info("Seeded owner account: owner@dom.app")
+            logger.info("Seeded owner account: margo@margocrm.ru")
     except Exception as e:
         logger.warning(f"Could not seed owner account: {e}")
         db.rollback()
