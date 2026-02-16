@@ -54,7 +54,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <button
           onClick={toggle}
           className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          title={dark ? "Светлая тема" : "Тёмная тема"}
+          title={dark ? t("settings.lightTheme") : t("settings.darkTheme")}
         >
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>

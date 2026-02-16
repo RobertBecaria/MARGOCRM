@@ -35,7 +35,7 @@ export default function Settings() {
       {/* Profile */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Профиль
+          {t("settings.profile")}
         </h2>
         <Input
           label={t("staff.name")}
@@ -63,11 +63,11 @@ export default function Settings() {
       {/* Theme */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-3">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Тема
+          {t("settings.theme")}
         </h2>
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-600 dark:text-gray-400">
-            {dark ? "Тёмная тема" : "Светлая тема"}
+            {dark ? t("settings.darkTheme") : t("settings.lightTheme")}
           </span>
           <button
             onClick={toggle}

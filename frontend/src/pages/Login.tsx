@@ -18,7 +18,7 @@ export default function Login() {
       await login(email, password);
       navigate("/");
     } catch {
-      setError("Неверный email или пароль");
+      setError(t("auth.invalidCredentials"));
     }
   }
 

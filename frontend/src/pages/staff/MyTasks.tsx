@@ -5,23 +5,10 @@ import { format, parseISO, isPast } from "date-fns";
 import { ru } from "date-fns/locale";
 import { getTasks, updateTask } from "../../api/tasks";
 import { useAuth } from "../../hooks/useAuth";
-import type { TaskStatus, TaskPriority } from "../../types";
+import type { TaskStatus } from "../../types";
+import { PRIORITY_COLOR, STATUS_FLOW, STATUS_LABEL_KEYS } from "../../utils/constants";
 import Badge from "../../components/ui/Badge";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
-
-const priorityColor: Record<TaskPriority, "gray" | "blue" | "orange" | "red"> = {
-  low: "gray",
-  medium: "blue",
-  high: "orange",
-  urgent: "red",
-};
-
-const statusFlow: TaskStatus[] = ["pending", "in_progress", "done"];
-const statusLabels: Record<TaskStatus, string> = {
-  pending: "tasks.pending",
-  in_progress: "tasks.inProgress",
-  done: "tasks.done",
-};
 
 export default function MyTasks() {
   const { t } = useTranslation();
@@ -49,7 +36,7 @@ export default function MyTasks() {
           {t("nav.myTasks")}
         </h1>
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          Нет задач на сегодня
+          {t("tasks.noTasksToday")}
         </div>
       </div>
     );
@@ -85,7 +72,7 @@ export default function MyTasks() {
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge color={priorityColor[task.priority]}>
+                    <Badge color={PRIORITY_COLOR[task.priority]}>
                       {t(`tasks.${task.priority}`)}
                     </Badge>
                     {task.due_date && (
@@ -98,7 +85,7 @@ export default function MyTasks() {
                 </div>
 
                 <div className="flex gap-1">
-                  {statusFlow.map((status) => (
+                  {STATUS_FLOW.map((status) => (
                     <button
                       key={status}
                       onClick={() => updateMut.mutate({ id: task.id, status })}
@@ -109,7 +96,7 @@ export default function MyTasks() {
                           : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                       }`}
                     >
-                      {t(statusLabels[status])}
+                      {t(STATUS_LABEL_KEYS[status])}
                     </button>
                   ))}
                 </div>

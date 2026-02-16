@@ -14,13 +14,6 @@
     "myPay": "Мои выплаты",
     "aiChat": "AI Ассистент"
   },
-  "auth": {
-    "login": "Войти",
-    "email": "Электронная почта",
-    "password": "Пароль",
-    "loginTitle": "Вход в систему",
-    "logout": "Выйти"
-  },
   "staff": {
     "title": "Персонал",
     "addStaff": "Добавить сотрудника",
@@ -30,7 +23,12 @@
     "email": "Почта",
     "status": "Статус",
     "active": "Активен",
-    "inactive": "Неактивен"
+    "inactive": "Неактивен",
+    "noStaff": "Нет сотрудников",
+    "employee": "Сотрудник",
+    "selectEmployee": "Выберите сотрудника",
+    "allStaff": "Все сотрудники",
+    "confirmDeactivate": "Вы уверены?"
   },
   "roles": {
     "owner": "Владелец",
@@ -49,7 +47,15 @@
     "location": "Место",
     "scheduled": "Запланировано",
     "completed": "Выполнено",
-    "cancelled": "Отменено"
+    "cancelled": "Отменено",
+    "notes": "Заметки",
+    "noShiftsToday": "Нет смен сегодня",
+    "requestChange": "Запросить изменение",
+    "desiredDate": "Желаемая дата",
+    "reason": "Причина",
+    "reasonPlaceholder": "Укажите причину изменения",
+    "submit": "Отправить",
+    "paidDate": "Дата выплаты"
   },
   "tasks": {
     "title": "Задачи",
@@ -60,7 +66,18 @@
     "low": "Низкий",
     "medium": "Средний",
     "high": "Высокий",
-    "urgent": "Срочный"
+    "urgent": "Срочный",
+    "noTasks": "Нет задач",
+    "noTasksToday": "Нет задач на сегодня",
+    "activeTasks": "Активные задачи",
+    "noActiveTasks": "Нет активных задач",
+    "taskName": "Название",
+    "description": "Описание",
+    "assignee": "Исполнитель",
+    "selectAssignee": "Выберите сотрудника",
+    "priority": "Приоритет",
+    "allPriorities": "Все приоритеты",
+    "dueDate": "Срок"
   },
   "finance": {
     "title": "Финансы",
@@ -72,20 +89,71 @@
     "period": "Период",
     "amount": "Сумма",
     "paid": "Оплачено",
-    "pendingPayment": "Ожидает оплаты"
+    "pendingPayment": "Ожидает оплаты",
+    "createRecord": "Создать запись",
+    "addExpense": "Добавить расход",
+    "addIncome": "Добавить доход",
+    "noData": "Нет данных",
+    "baseSalary": "Оклад",
+    "bonuses": "Бонусы",
+    "deductions": "Вычеты",
+    "periodStart": "Начало периода",
+    "periodEnd": "Конец периода",
+    "category": "Категория",
+    "source": "Источник",
+    "balance": "Баланс",
+    "monthlyChart": "Доходы и расходы по месяцам",
+    "expensesByCategory": "Расходы по категориям",
+    "catHousehold": "Хозяйство",
+    "catTransport": "Транспорт",
+    "catFood": "Еда",
+    "catEntertainment": "Развлечения",
+    "catOther": "Прочее",
+    "select": "Выберите"
   },
   "ai": {
     "title": "AI Ассистент",
     "placeholder": "Напишите сообщение...",
     "send": "Отправить",
     "thinking": "Думаю...",
-    "actionCompleted": "Действие выполнено"
+    "actionCompleted": "Действие выполнено",
+    "askAssistant": "Спросить AI ассистента"
   },
   "notifications": {
     "title": "Уведомления",
     "markRead": "Прочитано",
     "markAllRead": "Прочитать все",
-    "empty": "Нет новых уведомлений"
+    "empty": "Нет новых уведомлений",
+    "all": "Все",
+    "typeSchedule": "Расписание",
+    "typeTask": "Задачи",
+    "typePayment": "Оплата",
+    "typeSystem": "Система"
+  },
+  "dashboard": {
+    "welcome": "Добро пожаловать",
+    "staffOnShift": "Сотрудники на смене сегодня",
+    "pendingTasks": "Незавершённые задачи",
+    "monthlyExpenses": "Расходы за месяц",
+    "unreadNotifications": "Непрочитанные уведомления",
+    "createTask": "Создать задачу",
+    "addExpense": "Добавить расход",
+    "recentEvents": "Последние события",
+    "noEvents": "Нет событий"
+  },
+  "settings": {
+    "profile": "Профиль",
+    "theme": "Тема",
+    "darkTheme": "Тёмная тема",
+    "lightTheme": "Светлая тема"
+  },
+  "auth": {
+    "login": "Войти",
+    "email": "Электронная почта",
+    "password": "Пароль",
+    "loginTitle": "Вход в систему",
+    "logout": "Выйти",
+    "invalidCredentials": "Неверный email или пароль"
   },
   "common": {
     "save": "Сохранить",
@@ -101,6 +169,8 @@
     "back": "Назад",
     "today": "Сегодня",
     "thisWeek": "Эта неделя",
-    "thisMonth": "Этот месяц"
+    "thisMonth": "Этот месяц",
+    "description": "Описание",
+    "date": "Дата"
   }
 }

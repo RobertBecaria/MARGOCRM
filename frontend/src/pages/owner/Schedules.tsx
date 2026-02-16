@@ -81,7 +81,7 @@ export default function Schedules() {
   }, [staffList]);
 
   const staffFilterOptions = [
-    { value: "", label: "Все сотрудники" },
+    { value: "", label: t("staff.allStaff") },
     ...staffList.map((u) => ({ value: String(u.id), label: u.full_name })),
   ];
 
@@ -306,9 +306,9 @@ export default function Schedules() {
       >
         <div className="space-y-4">
           <Select
-            label="Сотрудник"
+            label={t("staff.employee")}
             options={[
-              { value: "", label: "Выберите сотрудника" },
+              { value: "", label: t("staff.selectEmployee") },
               ...staffList.map((u) => ({ value: String(u.id), label: u.full_name })),
             ]}
             value={form.user_id}
@@ -344,7 +344,7 @@ export default function Schedules() {
             required
           />
           <Input
-            label="Заметки"
+            label={t("schedule.notes")}
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
           />

@@ -7,23 +7,10 @@ import { ru } from "date-fns/locale";
 import { useAuth } from "../../hooks/useAuth";
 import { getSchedules } from "../../api/schedules";
 import { getTasks, updateTask } from "../../api/tasks";
-import type { TaskStatus, TaskPriority } from "../../types";
+import type { TaskStatus } from "../../types";
+import { PRIORITY_COLOR, STATUS_FLOW, STATUS_LABEL_KEYS } from "../../utils/constants";
 import Badge from "../../components/ui/Badge";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
-
-const priorityColor: Record<TaskPriority, "gray" | "blue" | "orange" | "red"> = {
-  low: "gray",
-  medium: "blue",
-  high: "orange",
-  urgent: "red",
-};
-
-const statusFlow: TaskStatus[] = ["pending", "in_progress", "done"];
-const statusLabels: Record<TaskStatus, string> = {
-  pending: "tasks.pending",
-  in_progress: "tasks.inProgress",
-  done: "tasks.done",
-};
 
 export default function MyDay() {
   const { t } = useTranslation();
@@ -67,7 +54,7 @@ export default function MyDay() {
         </h2>
         {schedules.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-sm text-gray-500 dark:text-gray-400">
-            Нет смен сегодня
+            {t("schedule.noShiftsToday")}
           </div>
         ) : (
           <div className="space-y-2">
@@ -92,11 +79,11 @@ export default function MyDay() {
       {/* Active tasks */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-          Активные задачи ({activeTasks.length})
+          {t("tasks.activeTasks")} ({activeTasks.length})
         </h2>
         {activeTasks.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 text-sm text-gray-500 dark:text-gray-400">
-            Нет активных задач
+            {t("tasks.noActiveTasks")}
           </div>
         ) : (
           <div className="space-y-2">
@@ -111,13 +98,13 @@ export default function MyDay() {
                       {task.title}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge color={priorityColor[task.priority]}>
+                      <Badge color={PRIORITY_COLOR[task.priority]}>
                         {t(`tasks.${task.priority}`)}
                       </Badge>
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    {statusFlow.map((status) => (
+                    {STATUS_FLOW.map((status) => (
                       <button
                         key={status}
                         onClick={() => updateMut.mutate({ id: task.id, status })}
@@ -128,7 +115,7 @@ export default function MyDay() {
                             : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                         }`}
                       >
-                        {t(statusLabels[status])}
+                        {t(STATUS_LABEL_KEYS[status])}
                       </button>
                     ))}
                   </div>
@@ -149,7 +136,7 @@ export default function MyDay() {
         </div>
         <div>
           <div className="text-sm font-medium text-gray-900 dark:text-white">
-            Спросить AI ассистента
+            {t("ai.askAssistant")}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">
             {t("ai.placeholder")}

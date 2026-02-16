@@ -162,21 +162,21 @@ export default function MySchedule() {
       <Modal
         open={changeModal !== null}
         onClose={() => { setChangeModal(null); setReason(""); setRequestedDate(""); }}
-        title="Запросить изменение"
+        title={t("schedule.requestChange")}
       >
         <div className="space-y-4">
           <Input
-            label="Желаемая дата"
+            label={t("schedule.desiredDate")}
             type="date"
             value={requestedDate}
             onChange={(e) => setRequestedDate(e.target.value)}
             required
           />
           <Input
-            label="Причина"
+            label={t("schedule.reason")}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Укажите причину изменения"
+            placeholder={t("schedule.reasonPlaceholder")}
             required
           />
           <div className="flex gap-3 justify-end pt-2">
@@ -184,7 +184,7 @@ export default function MySchedule() {
               {t("common.cancel")}
             </Button>
             <Button onClick={handleChangeRequest} loading={changeMut.isPending}>
-              Отправить
+              {t("schedule.submit")}
             </Button>
           </div>
         </div>

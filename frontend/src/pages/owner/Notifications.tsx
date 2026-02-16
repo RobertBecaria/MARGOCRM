@@ -9,12 +9,12 @@ import type { NotificationType } from "../../types";
 import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
-const typeFilters: { value: string; label: string }[] = [
-  { value: "", label: "Все" },
-  { value: "schedule", label: "Расписание" },
-  { value: "task", label: "Задачи" },
-  { value: "payment", label: "Оплата" },
-  { value: "system", label: "Система" },
+const typeFilters: { value: string; labelKey: string }[] = [
+  { value: "", labelKey: "notifications.all" },
+  { value: "schedule", labelKey: "notifications.typeSchedule" },
+  { value: "task", labelKey: "notifications.typeTask" },
+  { value: "payment", labelKey: "notifications.typePayment" },
+  { value: "system", labelKey: "notifications.typeSystem" },
 ];
 
 const typeIcons: Record<NotificationType, typeof Calendar> = {
@@ -76,7 +76,7 @@ export default function Notifications() {
                 : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
             }`}
           >
-            {f.label}
+            {t(f.labelKey)}
           </button>
         ))}
       </div>

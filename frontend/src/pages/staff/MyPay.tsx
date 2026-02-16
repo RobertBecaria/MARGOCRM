@@ -29,13 +29,13 @@ export default function MyPay() {
 
       {records.length === 0 ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          Нет данных
+          {t("finance.noData")}
         </div>
       ) : (
         <>
           {/* Desktop table */}
           <div className="hidden md:block">
-            <Table headers={[t("finance.period"), "Оклад", "Бонусы", "Вычеты", t("finance.total"), t("staff.status"), "Дата выплаты"]}>
+            <Table headers={[t("finance.period"), t("finance.baseSalary"), t("finance.bonuses"), t("finance.deductions"), t("finance.total"), t("staff.status"), t("schedule.paidDate")]}>
               {records.map((r) => (
                 <tr key={r.id}>
                   <Td className="text-xs">
@@ -75,9 +75,9 @@ export default function MyPay() {
                   {formatMoney(r.net_amount)}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 flex gap-3">
-                  <span>Оклад: {formatMoney(r.base_salary)}</span>
-                  <span>Бонусы: {formatMoney(r.bonuses)}</span>
-                  <span>Вычеты: {formatMoney(r.deductions)}</span>
+                  <span>{t("finance.baseSalary")}: {formatMoney(r.base_salary)}</span>
+                  <span>{t("finance.bonuses")}: {formatMoney(r.bonuses)}</span>
+                  <span>{t("finance.deductions")}: {formatMoney(r.deductions)}</span>
                 </div>
               </div>
             ))}

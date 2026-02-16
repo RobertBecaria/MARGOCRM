@@ -21,16 +21,9 @@ const roleBadgeColor: Record<Role, "blue" | "orange" | "purple" | "green" | "red
   owner: "cyan",
 };
 
-const roleOptions = [
-  { value: "", label: "Все должности" },
-  { value: "manager", label: "Менеджер" },
-  { value: "driver", label: "Водитель" },
-  { value: "chef", label: "Повар" },
-  { value: "assistant", label: "Ассистент" },
-  { value: "cleaner", label: "Клинер" },
-];
+// Role options are built dynamically in the component using i18n
 
-const roleFormOptions = roleOptions.filter((r) => r.value !== "");
+const ROLE_VALUES = ["manager", "driver", "chef", "assistant", "cleaner"] as const;
 
 interface StaffFormData {
   email: string;
@@ -157,7 +150,10 @@ export default function Staff() {
           />
         </div>
         <Select
-          options={roleOptions}
+          options={[
+            { value: "", label: t("staff.allStaff") },
+            ...ROLE_VALUES.map((r) => ({ value: r, label: t(`roles.${r}`) })),
+          ]}
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
           className="sm:w-48"
@@ -166,7 +162,7 @@ export default function Staff() {
 
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          Нет сотрудников
+          {t("staff.noStaff")}
         </div>
       ) : (
         <>
@@ -291,7 +287,7 @@ export default function Staff() {
           )}
           <Select
             label={t("staff.role")}
-            options={roleFormOptions}
+            options={ROLE_VALUES.map((r) => ({ value: r, label: t(`roles.${r}`) }))}
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
           />
@@ -319,7 +315,7 @@ export default function Staff() {
         title={t("common.confirm")}
       >
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Вы уверены?
+          {t("staff.confirmDeactivate")}
         </p>
         <div className="flex gap-3 justify-end">
           <Button variant="secondary" onClick={() => setConfirmId(null)}>
