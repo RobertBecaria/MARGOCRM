@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Bot, X, Send, Loader2 } from "lucide-react";
+import { Bot, X, Send, Loader2, Mic, MicOff, Volume2, VolumeX, Sparkles } from "lucide-react";
 import { useChatStore, type ChatMessage as ChatMsg } from "../../store/chatStore";
 import { useWebSocket } from "../../hooks/useWebSocket";
+import { useVoice } from "../../hooks/useVoice";
 import ChatMessage from "./ChatMessage";
 
 interface ChatPanelProps {
@@ -13,20 +14,48 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(fullScreen);
   const [input, setInput] = useState("");
+  const [voiceMode, setVoiceMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { messages, isTyping } = useChatStore();
   const { sendMessage } = useWebSocket();
+  const { isListening, isSpeaking, transcript, startListening, stopListening, speak, stopSpeaking, supported } = useVoice();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  // When voice transcript is received, set it as input and auto-send
+  useEffect(() => {
+    if (transcript) {
+      setInput(transcript);
+      // Auto-send after voice input
+      const text = transcript.trim();
+      if (text) {
+        sendMessage(text);
+        setInput("");
+        setVoiceMode(true); // Enable auto-speak for response
+      }
+    }
+  }, [transcript, sendMessage]);
+
+  // Auto-speak assistant responses when in voice mode
+  useEffect(() => {
+    if (voiceMode && messages.length > 0) {
+      const last = messages[messages.length - 1];
+      if (last.role === "assistant") {
+        speak(last.content);
+        setVoiceMode(false);
+      }
+    }
+  }, [messages, voiceMode, speak]);
 
   function handleSend() {
     const text = input.trim();
     if (!text) return;
     sendMessage(text);
     setInput("");
+    setVoiceMode(false);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -36,16 +65,28 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
     }
   }
 
+  function handleVoiceToggle() {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }
+
   if (fullScreen) {
     return (
       <div className="flex flex-col h-[calc(100vh-7rem)] animate-fade-in">
-        <h1 className="text-xl font-semibold text-purple-200 mb-4">
-          {t("ai.title")}
-        </h1>
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles size={20} className="text-blue-400 animate-glow-pulse" />
+          <h1 className="text-xl font-semibold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            {t("ai.title")}
+          </h1>
+        </div>
         <div className="flex-1 flex flex-col glass-card rounded-xl overflow-hidden">
           <MessageArea
             messages={messages}
             isTyping={isTyping}
+            isSpeaking={isSpeaking}
             messagesEndRef={messagesEndRef}
             t={t}
           />
@@ -54,6 +95,11 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
             setInput={setInput}
             onSend={handleSend}
             onKeyDown={handleKeyDown}
+            onVoiceToggle={handleVoiceToggle}
+            onStopSpeaking={stopSpeaking}
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+            voiceSupported={supported}
             t={t}
           />
         </div>
@@ -79,8 +125,8 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-2">
-              <Bot size={18} className="text-blue-400" />
-              <span className="text-sm font-semibold text-purple-200">
+              <Sparkles size={16} className="text-blue-400 animate-glow-pulse" />
+              <span className="text-sm font-semibold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
                 {t("ai.title")}
               </span>
             </div>
@@ -95,6 +141,7 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
           <MessageArea
             messages={messages}
             isTyping={isTyping}
+            isSpeaking={isSpeaking}
             messagesEndRef={messagesEndRef}
             t={t}
           />
@@ -103,6 +150,11 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
             setInput={setInput}
             onSend={handleSend}
             onKeyDown={handleKeyDown}
+            onVoiceToggle={handleVoiceToggle}
+            onStopSpeaking={stopSpeaking}
+            isListening={isListening}
+            isSpeaking={isSpeaking}
+            voiceSupported={supported}
             t={t}
           />
         </div>
@@ -114,19 +166,26 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
 function MessageArea({
   messages,
   isTyping,
+  isSpeaking,
   messagesEndRef,
   t,
 }: {
   messages: ChatMsg[];
   isTyping: boolean;
+  isSpeaking: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   t: (k: string) => string;
 }) {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-3">
       {messages.length === 0 && (
-        <div className="text-center text-sm text-gray-500 py-8">
-          {t("ai.placeholder")}
+        <div className="flex flex-col items-center justify-center py-12 space-y-3">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 flex items-center justify-center">
+            <Sparkles size={28} className="text-blue-400" />
+          </div>
+          <div className="text-sm text-gray-500 text-center">
+            {t("ai.placeholder")}
+          </div>
         </div>
       )}
       {messages.map((msg) => (
@@ -144,6 +203,12 @@ function MessageArea({
           {t("ai.thinking")}
         </div>
       )}
+      {isSpeaking && (
+        <div className="flex items-center gap-2 text-sm text-purple-400">
+          <Volume2 size={14} className="animate-pulse" />
+          {t("ai.speaking")}
+        </div>
+      )}
       <div ref={messagesEndRef} />
     </div>
   );
@@ -154,12 +219,22 @@ function InputBar({
   setInput,
   onSend,
   onKeyDown,
+  onVoiceToggle,
+  onStopSpeaking,
+  isListening,
+  isSpeaking,
+  voiceSupported,
   t,
 }: {
   input: string;
   setInput: (v: string) => void;
   onSend: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
+  onVoiceToggle: () => void;
+  onStopSpeaking: () => void;
+  isListening: boolean;
+  isSpeaking: boolean;
+  voiceSupported: boolean;
   t: (k: string) => string;
 }) {
   return (
@@ -172,6 +247,35 @@ function InputBar({
         placeholder={t("ai.placeholder")}
         className="flex-1 rounded-lg px-3 py-2 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
       />
+
+      {/* Voice button */}
+      {voiceSupported && (
+        <>
+          {isSpeaking ? (
+            <button
+              onClick={onStopSpeaking}
+              className="p-2 rounded-lg text-purple-400 hover:bg-white/10 transition-all"
+              title={t("ai.speaking")}
+            >
+              <VolumeX size={16} />
+            </button>
+          ) : (
+            <button
+              onClick={onVoiceToggle}
+              className={`p-2 rounded-lg transition-all ${
+                isListening
+                  ? "bg-red-500/20 text-red-400 animate-pulse"
+                  : "text-gray-400 hover:text-purple-200 hover:bg-white/10"
+              }`}
+              title={isListening ? t("ai.voiceStop") : t("ai.voiceStart")}
+            >
+              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Send button */}
       <button
         onClick={onSend}
         disabled={!input.trim()}

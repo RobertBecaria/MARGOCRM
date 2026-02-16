@@ -12,7 +12,6 @@ import {
   CalendarDays,
   ListTodo,
   CreditCard,
-  Bot,
   X,
   Sparkles,
 } from "lucide-react";
@@ -33,7 +32,7 @@ const staffNav = [
   { to: "/my-schedule", icon: CalendarDays, label: "nav.mySchedule" },
   { to: "/my-tasks", icon: ListTodo, label: "nav.myTasks" },
   { to: "/my-pay", icon: CreditCard, label: "nav.myPay" },
-  { to: "/ai-chat", icon: Bot, label: "nav.aiChat" },
+  { to: "/ai-chat", icon: Sparkles, label: "nav.aiChat" },
 ];
 
 interface SidebarProps {

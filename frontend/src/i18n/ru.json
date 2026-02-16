@@ -12,7 +12,7 @@
     "mySchedule": "Моё расписание",
     "myTasks": "Мои задачи",
     "myPay": "Мои выплаты",
-    "aiChat": "AI Ассистент"
+    "aiChat": "Лия"
   },
   "staff": {
     "title": "Персонал",
@@ -112,12 +112,16 @@
     "select": "Выберите"
   },
   "ai": {
-    "title": "AI Ассистент",
-    "placeholder": "Напишите сообщение...",
+    "title": "Лия",
+    "placeholder": "Спросите Лию...",
     "send": "Отправить",
-    "thinking": "Думаю...",
+    "thinking": "Лия думает...",
     "actionCompleted": "Действие выполнено",
-    "askAssistant": "Спросить AI ассистента"
+    "askAssistant": "Спросить Лию",
+    "voiceStart": "Голосовой ввод",
+    "voiceStop": "Остановить запись",
+    "voiceNotSupported": "Голосовой ввод не поддерживается",
+    "speaking": "Лия говорит..."
   },
   "notifications": {
     "title": "Уведомления",
