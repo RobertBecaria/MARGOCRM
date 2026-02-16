@@ -26,12 +26,6 @@ import Modal from "../../components/ui/Modal";
 import Badge from "../../components/ui/Badge";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
-const staffColors = ["blue", "green", "orange", "purple", "cyan", "pink"] as const;
-
-function getStaffColor(idx: number) {
-  return staffColors[idx % staffColors.length];
-}
-
 interface ShiftForm {
   user_id: string;
   date: string;

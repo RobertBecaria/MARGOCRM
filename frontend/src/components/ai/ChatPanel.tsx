@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Bot, X, Send, Loader2 } from "lucide-react";
-import { useChatStore } from "../../store/chatStore";
+import { useChatStore, type ChatMessage as ChatMsg } from "../../store/chatStore";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import ChatMessage from "./ChatMessage";
 
@@ -117,7 +117,7 @@ function MessageArea({
   messagesEndRef,
   t,
 }: {
-  messages: ReturnType<typeof useChatStore>["messages"];
+  messages: ChatMsg[];
   isTyping: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   t: (k: string) => string;

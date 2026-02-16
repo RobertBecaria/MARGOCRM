@@ -42,14 +42,6 @@ const categoryLabels: Record<ExpenseCategory, string> = {
   other: "Прочее",
 };
 
-const categoryColors: Record<ExpenseCategory, string> = {
-  household: "#3b82f6",
-  transport: "#22c55e",
-  food: "#f59e0b",
-  entertainment: "#a855f7",
-  other: "#6b7280",
-};
-
 const PIE_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#6b7280"];
 
 export default function Finance() {
@@ -360,7 +352,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value: number) => formatMoney(value)} />
+              <Tooltip formatter={(value) => formatMoney(Number(value))} />
               <Legend />
               <Bar dataKey="income" name={t("finance.income")} fill="#22c55e" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expenses" name={t("finance.expenses")} fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -385,13 +377,13 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
                 outerRadius={100}
                 paddingAngle={2}
                 dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
               >
                 {pieData.map((_, idx) => (
                   <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => formatMoney(value)} />
+              <Tooltip formatter={(value) => formatMoney(Number(value))} />
             </PieChart>
           </ResponsiveContainer>
         </div>

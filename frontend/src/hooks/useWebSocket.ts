@@ -3,7 +3,7 @@ import { useChatStore } from "../store/chatStore";
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const retriesRef = useRef(0);
 
   const { addMessage, setTyping } = useChatStore();

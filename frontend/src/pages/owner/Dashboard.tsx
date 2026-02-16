@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Users, CheckSquare, Wallet, Bell, Plus, Receipt } from "lucide-react";
@@ -14,7 +13,6 @@ import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 export default function Dashboard() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
 
