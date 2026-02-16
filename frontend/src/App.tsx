@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./i18n";
 import Layout from "./components/layout/Layout";
 import Login from "./pages/Login";
+import Staff from "./pages/owner/Staff";
 import { useAuth } from "./hooks/useAuth";
 
 // Placeholder pages — will be replaced with full implementations
@@ -15,7 +16,6 @@ function Placeholder({ title }: { title: string }) {
 }
 
 function Dashboard() { return <Placeholder title="Главная" />; }
-function Staff() { return <Placeholder title="Персонал" />; }
 function Schedules() { return <Placeholder title="Расписание" />; }
 function Tasks() { return <Placeholder title="Задачи" />; }
 function Finance() { return <Placeholder title="Финансы" />; }
