@@ -198,6 +198,68 @@ def get_finance_summary(db: Session, period_start: str, period_end: str) -> Dict
     }
 
 
+def create_expense(db: Session, category: str, description: str, amount: float, date: str, created_by: int) -> Dict:
+    expense = Expense(
+        category=ExpenseCategory(category),
+        description=description,
+        amount=amount,
+        date=dt.date.fromisoformat(date),
+        created_by=created_by,
+    )
+    db.add(expense)
+    db.commit()
+    db.refresh(expense)
+    return {"id": expense.id, "amount": amount, "category": category, "message": f"Расход добавлен: {description} — {amount}₽"}
+
+
+def get_expenses(db: Session, date_from: Optional[str] = None, date_to: Optional[str] = None, category: Optional[str] = None) -> List[Dict]:
+    query = db.query(Expense)
+    if date_from:
+        query = query.filter(Expense.date >= dt.date.fromisoformat(date_from))
+    if date_to:
+        query = query.filter(Expense.date <= dt.date.fromisoformat(date_to))
+    if category:
+        query = query.filter(Expense.category == category)
+    expenses = query.order_by(Expense.date.desc()).all()
+    return [
+        {
+            "id": e.id, "category": e.category.value, "description": e.description,
+            "amount": float(e.amount), "date": str(e.date),
+        }
+        for e in expenses
+    ]
+
+
+def create_income(db: Session, source: str, description: str, amount: float, date: str, category: str = "other") -> Dict:
+    income = Income(
+        source=source,
+        description=description,
+        amount=amount,
+        date=dt.date.fromisoformat(date),
+        category=category,
+    )
+    db.add(income)
+    db.commit()
+    db.refresh(income)
+    return {"id": income.id, "amount": amount, "message": f"Доход добавлен: {description} — {amount}₽"}
+
+
+def get_income(db: Session, date_from: Optional[str] = None, date_to: Optional[str] = None) -> List[Dict]:
+    query = db.query(Income)
+    if date_from:
+        query = query.filter(Income.date >= dt.date.fromisoformat(date_from))
+    if date_to:
+        query = query.filter(Income.date <= dt.date.fromisoformat(date_to))
+    records = query.order_by(Income.date.desc()).all()
+    return [
+        {
+            "id": r.id, "source": r.source, "description": r.description,
+            "amount": float(r.amount), "date": str(r.date), "category": r.category,
+        }
+        for r in records
+    ]
+
+
 def send_notification(db: Session, user_id: int, title: str, message: str, type: str = "system") -> Dict:
     notification = Notification(
         user_id=user_id,
@@ -238,6 +300,10 @@ TOOL_DISPATCH = {
     "get_payroll": get_payroll,
     "create_payroll": create_payroll,
     "get_finance_summary": get_finance_summary,
+    "create_expense": create_expense,
+    "get_expenses": get_expenses,
+    "create_income": create_income,
+    "get_income": get_income,
     "send_notification": send_notification,
     "create_schedule_change_request": create_schedule_change_request,
 }
@@ -431,6 +497,70 @@ OWNER_TOOLS = [
                     "period_end": {"type": "string", "description": "YYYY-MM-DD"},
                 },
                 "required": ["period_start", "period_end"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_expense",
+            "description": "Добавить расход. Категории: household (хозяйство), transport (транспорт), food (еда), entertainment (развлечения), other (прочее).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string", "enum": ["household", "transport", "food", "entertainment", "other"]},
+                    "description": {"type": "string", "description": "Описание расхода"},
+                    "amount": {"type": "number", "description": "Сумма в рублях"},
+                    "date": {"type": "string", "description": "Дата YYYY-MM-DD"},
+                },
+                "required": ["category", "description", "amount", "date"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_expenses",
+            "description": "Получить список расходов. Можно фильтровать по датам и категории.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date_from": {"type": "string", "description": "YYYY-MM-DD"},
+                    "date_to": {"type": "string", "description": "YYYY-MM-DD"},
+                    "category": {"type": "string", "enum": ["household", "transport", "food", "entertainment", "other"]},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_income",
+            "description": "Добавить доход.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string", "description": "Источник дохода"},
+                    "description": {"type": "string", "description": "Описание"},
+                    "amount": {"type": "number", "description": "Сумма в рублях"},
+                    "date": {"type": "string", "description": "Дата YYYY-MM-DD"},
+                    "category": {"type": "string", "description": "Категория дохода"},
+                },
+                "required": ["source", "description", "amount", "date"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_income",
+            "description": "Получить список доходов. Можно фильтровать по датам.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date_from": {"type": "string", "description": "YYYY-MM-DD"},
+                    "date_to": {"type": "string", "description": "YYYY-MM-DD"},
+                },
             },
         },
     },

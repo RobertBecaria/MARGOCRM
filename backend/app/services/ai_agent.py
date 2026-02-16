@@ -134,6 +134,10 @@ class DeepSeekAgent:
                     elif func_name == "update_task_status":
                         func_args["_caller_id"] = user.id
 
+                # Inject current user ID where needed
+                if func_name == "create_expense":
+                    func_args["created_by"] = user.id
+
                 # Execute tool
                 tool_func = TOOL_DISPATCH.get(func_name)
                 if tool_func:
