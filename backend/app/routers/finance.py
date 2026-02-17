@@ -203,22 +203,17 @@ def finance_summary(
     if not period_end:
         period_end = today
 
+    # All-time totals (no date filter) so dashboard always shows real numbers
     total_payroll = float(
-        db.query(func.coalesce(func.sum(Payroll.net_amount), 0))
-        .filter(Payroll.period_start >= period_start, Payroll.period_end <= period_end)
-        .scalar()
+        db.query(func.coalesce(func.sum(Payroll.net_amount), 0)).scalar()
     )
 
     total_expenses = float(
-        db.query(func.coalesce(func.sum(Expense.amount), 0))
-        .filter(Expense.date >= period_start, Expense.date <= period_end)
-        .scalar()
+        db.query(func.coalesce(func.sum(Expense.amount), 0)).scalar()
     )
 
     total_income = float(
-        db.query(func.coalesce(func.sum(Income.amount), 0))
-        .filter(Income.date >= period_start, Income.date <= period_end)
-        .scalar()
+        db.query(func.coalesce(func.sum(Income.amount), 0)).scalar()
     )
 
     balance = total_income - total_expenses - total_payroll
@@ -263,10 +258,9 @@ def finance_summary(
 
     monthly = [MonthlySummary(**v) for v in sorted(months_map.values(), key=lambda x: x["month"])]
 
-    # Expense by category (current period)
+    # Expense by category (all-time)
     cat_rows = (
         db.query(Expense.category, func.sum(Expense.amount))
-        .filter(Expense.date >= period_start, Expense.date <= period_end)
         .group_by(Expense.category)
         .all()
     )

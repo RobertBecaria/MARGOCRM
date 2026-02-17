@@ -27,10 +27,10 @@ import { Table, Td } from "../../components/ui/Table";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 const tabs = [
-  { id: "payroll", label: "finance.payroll" },
-  { id: "expenses", label: "finance.expenses" },
-  { id: "income", label: "finance.income" },
   { id: "reports", label: "finance.reports" },
+  { id: "income", label: "finance.income" },
+  { id: "expenses", label: "finance.expenses" },
+  { id: "payroll", label: "finance.payroll" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -40,7 +40,7 @@ const PIE_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#6b7280"];
 export default function Finance() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabId>("payroll");
+  const [activeTab, setActiveTab] = useState<TabId>("reports");
 
   return (
     <div className="space-y-4">
