@@ -7,10 +7,7 @@ import type { Role } from "../types";
 
 const ROLES: { value: Role; labelKey: string }[] = [
   { value: "manager", labelKey: "roles.manager" },
-  { value: "driver", labelKey: "roles.driver" },
-  { value: "chef", labelKey: "roles.chef" },
-  { value: "assistant", labelKey: "roles.assistant" },
-  { value: "cleaner", labelKey: "roles.cleaner" },
+  { value: "staff", labelKey: "roles.staff" },
 ];
 
 export default function Register() {
@@ -21,7 +18,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<Role>("assistant");
+  const [role, setRole] = useState<Role>("staff");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

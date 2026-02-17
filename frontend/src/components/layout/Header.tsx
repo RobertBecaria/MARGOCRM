@@ -7,6 +7,7 @@ import NotificationBell from "../shared/NotificationBell";
 const roleBadgeColors: Record<string, string> = {
   owner: "bg-purple-500/20 text-purple-300 border border-purple-500/30",
   manager: "bg-blue-500/20 text-blue-300 border border-blue-500/30",
+  staff: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30",
   driver: "bg-green-500/20 text-green-300 border border-green-500/30",
   chef: "bg-orange-500/20 text-orange-300 border border-orange-500/30",
   assistant: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30",
@@ -16,6 +17,7 @@ const roleBadgeColors: Record<string, string> = {
 const roleBadgeColorsLight: Record<string, string> = {
   owner: "bg-purple-100 text-purple-700 border border-purple-200",
   manager: "bg-blue-100 text-blue-700 border border-blue-200",
+  staff: "bg-cyan-100 text-cyan-700 border border-cyan-200",
   driver: "bg-green-100 text-green-700 border border-green-200",
   chef: "bg-orange-100 text-orange-700 border border-orange-200",
   assistant: "bg-cyan-100 text-cyan-700 border border-cyan-200",

@@ -356,7 +356,7 @@ OWNER_TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "role": {"type": "string", "enum": ["driver", "chef", "assistant", "cleaner", "manager"]}
+                    "role": {"type": "string", "enum": ["staff", "manager"]}
                 },
             },
         },
@@ -385,7 +385,7 @@ OWNER_TOOLS = [
                 "properties": {
                     "email": {"type": "string"},
                     "full_name": {"type": "string"},
-                    "role": {"type": "string", "enum": ["driver", "chef", "assistant", "cleaner", "manager"]},
+                    "role": {"type": "string", "enum": ["staff", "manager"]},
                     "phone": {"type": "string"},
                     "password": {"type": "string"},
                 },

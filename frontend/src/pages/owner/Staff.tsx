@@ -14,17 +14,19 @@ import { Table, Td } from "../../components/ui/Table";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 const roleBadgeColor: Record<Role, "blue" | "orange" | "purple" | "green" | "red" | "cyan"> = {
+  staff: "blue",
+  manager: "red",
+  owner: "cyan",
+  // Legacy roles
   driver: "blue",
   chef: "orange",
   assistant: "purple",
   cleaner: "green",
-  manager: "red",
-  owner: "cyan",
 };
 
 // Role options are built dynamically in the component using i18n
 
-const ROLE_VALUES = ["manager", "driver", "chef", "assistant", "cleaner"] as const;
+const ROLE_VALUES = ["manager", "staff"] as const;
 
 interface StaffFormData {
   email: string;
@@ -39,7 +41,7 @@ const emptyForm: StaffFormData = {
   email: "",
   password: "",
   full_name: "",
-  role: "assistant",
+  role: "staff",
   phone: "",
   position: "",
 };

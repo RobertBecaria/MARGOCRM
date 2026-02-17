@@ -1,4 +1,4 @@
-export type Role = "owner" | "manager" | "driver" | "chef" | "assistant" | "cleaner";
+export type Role = "owner" | "manager" | "staff" | "driver" | "chef" | "assistant" | "cleaner";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskStatus = "pending" | "in_progress" | "done";
 export type ScheduleStatus = "scheduled" | "completed" | "cancelled";

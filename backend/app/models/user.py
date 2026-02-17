@@ -11,6 +11,8 @@ from app.database import Base
 class RoleEnum(str, enum.Enum):
     owner = "owner"
     manager = "manager"
+    staff = "staff"
+    # Legacy values kept for DB backward compatibility
     driver = "driver"
     chef = "chef"
     assistant = "assistant"
