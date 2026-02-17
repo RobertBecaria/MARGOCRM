@@ -17,7 +17,7 @@ def list_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
 ):
-    return db.query(User).all()
+    return db.query(User).filter(User.is_active == True).all()
 
 
 @router.get("/{user_id}", response_model=UserResponse)
