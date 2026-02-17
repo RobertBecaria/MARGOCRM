@@ -8,45 +8,69 @@ interface UseVoiceReturn {
   supported: boolean;
 }
 
-const SpeechRecognition =
-  (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+function getSpeechRecognition() {
+  if (typeof window === "undefined") return null;
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+}
 
 export function useVoice(): UseVoiceReturn {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef<any>(null);
 
-  const supported = !!SpeechRecognition;
+  const supported = !!getSpeechRecognition();
 
   const startListening = useCallback(() => {
+    const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) return;
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "ru-RU";
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    // Stop any existing instance first (fixes mobile re-start issues)
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+      recognitionRef.current = null;
+    }
 
-    recognition.onresult = (event: any) => {
-      const text = event.results[0][0].transcript;
-      setTranscript(text);
-    };
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "ru-RU";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
 
-    recognition.onend = () => {
+      recognition.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+        setTranscript(text);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        recognitionRef.current = null;
+      };
+
+      recognition.onerror = (event: any) => {
+        // "no-speech" and "aborted" are not real errors
+        if (event.error !== "no-speech" && event.error !== "aborted") {
+          console.warn("Speech recognition error:", event.error);
+        }
+        setIsListening(false);
+        recognitionRef.current = null;
+      };
+
+      recognitionRef.current = recognition;
+      setTranscript("");
+      recognition.start();
+      setIsListening(true);
+    } catch (err) {
+      console.warn("Failed to start speech recognition:", err);
       setIsListening(false);
-    };
-
-    recognition.onerror = () => {
-      setIsListening(false);
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-    setTranscript("");
+    }
   }, []);
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop();
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
     setIsListening(false);
   }, []);
 

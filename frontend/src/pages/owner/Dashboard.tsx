@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, CheckSquare, Wallet, Bell, Plus, DollarSign } from "lucide-react";
+import { Users, CheckSquare, Wallet, Bell, Plus, DollarSign, Receipt } from "lucide-react";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
@@ -8,10 +8,10 @@ import { useAuth } from "../../hooks/useAuth";
 import { getSchedules } from "../../api/schedules";
 import { getTasks, createTask } from "../../api/tasks";
 import { getNotifications } from "../../api/notifications";
-import { getFinanceSummary, createIncome } from "../../api/finance";
+import { getFinanceSummary, createIncome, createExpense } from "../../api/finance";
 import { getUsers } from "../../api/users";
 import { formatMoney } from "../../utils/formatters";
-import type { TaskPriority } from "../../types";
+import type { TaskPriority, ExpenseCategory } from "../../types";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
@@ -73,6 +73,20 @@ export default function Dashboard() {
     },
   });
 
+  // Expense creation modal
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({ category: "other" as ExpenseCategory, description: "", amount: "", date: "" });
+
+  const createExpenseMut = useMutation({
+    mutationFn: createExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
+      setExpenseModalOpen(false);
+      setExpenseForm({ category: "other", description: "", amount: "", date: "" });
+    },
+  });
+
   // Income creation modal
   const [incomeModalOpen, setIncomeModalOpen] = useState(false);
   const [incomeForm, setIncomeForm] = useState({ source: "", description: "", amount: "", date: "", category: "" });
@@ -128,10 +142,14 @@ export default function Dashboard() {
       </div>
 
       {/* Quick actions */}
-      <div className="flex gap-3">
+      <div className="flex flex-wrap gap-3">
         <Button onClick={() => setTaskModalOpen(true)}>
           <Plus size={16} />
           {t("dashboard.createTask")}
+        </Button>
+        <Button variant="secondary" onClick={() => setExpenseModalOpen(true)}>
+          <Receipt size={16} />
+          {t("dashboard.addExpense")}
         </Button>
         <Button variant="secondary" onClick={() => setIncomeModalOpen(true)}>
           <DollarSign size={16} />
@@ -204,6 +222,37 @@ export default function Dashboard() {
               })}
               loading={createTaskMut.isPending}
               disabled={!taskForm.title || !taskForm.assigned_to}
+            >
+              {t("common.save")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Expense Modal */}
+      <Modal open={expenseModalOpen} onClose={() => setExpenseModalOpen(false)} title={t("dashboard.addExpense")}>
+        <div className="space-y-4">
+          <Select
+            label={t("finance.category")}
+            options={[
+              { value: "household", label: t("finance.catHousehold") },
+              { value: "transport", label: t("finance.catTransport") },
+              { value: "food", label: t("finance.catFood") },
+              { value: "entertainment", label: t("finance.catEntertainment") },
+              { value: "other", label: t("finance.catOther") },
+            ]}
+            value={expenseForm.category}
+            onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value as ExpenseCategory })}
+          />
+          <Input label={t("common.description")} value={expenseForm.description} onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })} />
+          <Input label={t("finance.amount")} type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} />
+          <Input label={t("common.date")} type="date" value={expenseForm.date} onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })} />
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" onClick={() => setExpenseModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={() => createExpenseMut.mutate({ ...expenseForm, amount: Number(expenseForm.amount) })}
+              loading={createExpenseMut.isPending}
+              disabled={!expenseForm.description || !expenseForm.amount}
             >
               {t("common.save")}
             </Button>

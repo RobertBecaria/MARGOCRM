@@ -7,6 +7,7 @@ interface UserCreate {
   full_name: string;
   role: Role;
   phone?: string;
+  position?: string;
 }
 
 export async function getUsers(role?: Role): Promise<User[]> {

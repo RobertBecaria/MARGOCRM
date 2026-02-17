@@ -12,6 +12,7 @@ class UserCreate(BaseModel):
     full_name: str
     role: RoleEnum
     phone: Optional[str] = None
+    position: Optional[str] = None
 
 
 class UserLogin(BaseModel):
@@ -25,6 +26,7 @@ class UserResponse(BaseModel):
     full_name: str
     role: RoleEnum
     phone: Optional[str] = None
+    position: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: bool
     created_at: datetime
@@ -37,6 +39,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     role: Optional[RoleEnum] = None
     phone: Optional[str] = None
+    position: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: Optional[bool] = None
 
@@ -57,6 +60,7 @@ class PublicRegister(BaseModel):
     full_name: str
     role: RoleEnum
     phone: Optional[str] = None
+    position: Optional[str] = None
 
 
 class ChangePassword(BaseModel):

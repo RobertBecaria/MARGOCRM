@@ -12,6 +12,7 @@ export interface User {
   full_name: string;
   role: Role;
   phone: string | null;
+  position: string | null;
   avatar_url: string | null;
   is_active: boolean;
   created_at: string;

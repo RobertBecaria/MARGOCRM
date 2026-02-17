@@ -26,6 +26,7 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(255))
     role: Mapped[RoleEnum] = mapped_column(Enum(RoleEnum))
     phone: Mapped[Optional[str]] = mapped_column(String(50))
+    position: Mapped[Optional[str]] = mapped_column(String(255))
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

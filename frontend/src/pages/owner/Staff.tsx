@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, UserX, Search } from "lucide-react";
+import { Plus, Pencil, UserX, Search, Camera, Loader2 } from "lucide-react";
 import { getUsers, createUser, updateUser, deactivateUser } from "../../api/users";
+import { uploadFile } from "../../api/uploads";
 import type { Role, User } from "../../types";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -31,6 +32,7 @@ interface StaffFormData {
   full_name: string;
   role: Role;
   phone: string;
+  position: string;
 }
 
 const emptyForm: StaffFormData = {
@@ -39,6 +41,7 @@ const emptyForm: StaffFormData = {
   full_name: "",
   role: "assistant",
   phone: "",
+  position: "",
 };
 
 export default function Staff() {
@@ -51,6 +54,9 @@ export default function Staff() {
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [form, setForm] = useState<StaffFormData>(emptyForm);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -95,7 +101,9 @@ export default function Staff() {
       full_name: user.full_name,
       role: user.role,
       phone: user.phone || "",
+      position: user.position || "",
     });
+    setAvatarPreview(user.avatar_url || null);
     setModalOpen(true);
   }
 
@@ -103,16 +111,41 @@ export default function Staff() {
     setModalOpen(false);
     setEditingUser(null);
     setForm(emptyForm);
+    setAvatarPreview(null);
   }
 
   function handleSubmit() {
     if (editingUser) {
       updateMutation.mutate({
         id: editingUser.id,
-        data: { full_name: form.full_name, role: form.role, phone: form.phone || null },
+        data: {
+          full_name: form.full_name,
+          role: form.role,
+          phone: form.phone || null,
+          position: form.position || null,
+        },
       });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate({ ...form, position: form.position || undefined });
+    }
+  }
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>, userId?: number) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const result = await uploadFile(file);
+      setAvatarPreview(result.url);
+      if (userId) {
+        await updateUser(userId, { avatar_url: result.url });
+        queryClient.invalidateQueries({ queryKey: ["users"] });
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
     }
   }
 
@@ -168,10 +201,22 @@ export default function Staff() {
         <>
           {/* Desktop table */}
           <div className="hidden md:block">
-            <Table headers={[t("staff.name"), t("staff.role"), t("staff.phone"), t("staff.email"), t("staff.status"), ""]}>
+            <Table headers={[t("staff.name"), t("staff.position"), t("staff.role"), t("staff.phone"), t("staff.email"), t("staff.status"), ""]}>
               {filtered.map((user) => (
                 <tr key={user.id}>
-                  <Td className="font-medium">{user.full_name}</Td>
+                  <Td>
+                    <div className="flex items-center gap-2">
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center text-xs text-purple-300 font-medium">
+                          {user.full_name.charAt(0)}
+                        </div>
+                      )}
+                      <span className="font-medium">{user.full_name}</span>
+                    </div>
+                  </Td>
+                  <Td className="text-gray-400">{user.position || "—"}</Td>
                   <Td>
                     <Badge color={roleBadgeColor[user.role]}>
                       {t(`roles.${user.role}`)}
@@ -217,9 +262,19 @@ export default function Staff() {
                 className="glass-card rounded-xl p-4 space-y-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-purple-200">
-                    {user.full_name}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover ring-1 ring-white/10" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/30 to-blue-500/30 flex items-center justify-center text-sm text-purple-300 font-medium">
+                        {user.full_name.charAt(0)}
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-medium text-purple-200">{user.full_name}</span>
+                      {user.position && <div className="text-xs text-gray-500">{user.position}</div>}
+                    </div>
+                  </div>
                   <Badge color={roleBadgeColor[user.role]}>
                     {t(`roles.${user.role}`)}
                   </Badge>
@@ -262,11 +317,45 @@ export default function Staff() {
         title={editingUser ? t("common.edit") : t("staff.addStaff")}
       >
         <div className="space-y-4">
+          {/* Avatar upload */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="" className="w-16 h-16 rounded-full object-cover ring-2 ring-purple-500/30" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center text-lg text-purple-300 font-medium">
+                  {form.full_name ? form.full_name.charAt(0) : "?"}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-purple-600 text-white hover:bg-purple-500 transition-colors disabled:opacity-50"
+              >
+                {avatarUploading ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+              </button>
+            </div>
+            <div className="text-xs text-gray-500">{t("staff.uploadAvatar")}</div>
+          </div>
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleAvatarUpload(e, editingUser?.id)}
+          />
           <Input
             label={t("staff.name")}
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             required
+          />
+          <Input
+            label={t("staff.position")}
+            value={form.position}
+            onChange={(e) => setForm({ ...form, position: e.target.value })}
+            placeholder={t("staff.positionPlaceholder")}
           />
           <Input
             label={t("staff.email")}

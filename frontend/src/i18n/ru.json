@@ -28,7 +28,10 @@
     "employee": "Сотрудник",
     "selectEmployee": "Выберите сотрудника",
     "allStaff": "Все сотрудники",
-    "confirmDeactivate": "Вы уверены?"
+    "confirmDeactivate": "Вы уверены?",
+    "position": "Должность",
+    "positionPlaceholder": "Например: Личный водитель",
+    "uploadAvatar": "Загрузить фото"
   },
   "roles": {
     "owner": "Владелец",
