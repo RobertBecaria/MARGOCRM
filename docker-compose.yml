@@ -21,6 +21,8 @@ services:
       - db
     ports:
       - "8000:8000"
+    volumes:
+      - uploads:/app/uploads
 
   nginx:
     image: nginx:alpine
@@ -34,3 +36,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

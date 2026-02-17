@@ -71,6 +71,14 @@
     "noTasksToday": "Нет задач на сегодня",
     "activeTasks": "Активные задачи",
     "noActiveTasks": "Нет активных задач",
+    "clockIn": "Начать смену",
+    "clockOut": "Завершить смену",
+    "clockedIn": "На смене",
+    "clockedOut": "Смена завершена",
+    "clockInTime": "Пришёл",
+    "clockOutTime": "Ушёл",
+    "ipadOnly": "Доступно только с домашнего iPad",
+    "workedTime": "Отработано",
     "taskName": "Название",
     "description": "Описание",
     "assignee": "Исполнитель",
@@ -109,7 +117,10 @@
     "catFood": "Еда",
     "catEntertainment": "Развлечения",
     "catOther": "Прочее",
-    "select": "Выберите"
+    "select": "Выберите",
+    "editExpense": "Редактировать расход",
+    "editIncome": "Редактировать доход",
+    "confirmDelete": "Удалить эту запись?"
   },
   "ai": {
     "title": "Лия",
@@ -121,7 +132,8 @@
     "voiceStart": "Голосовой ввод",
     "voiceStop": "Остановить запись",
     "voiceNotSupported": "Голосовой ввод не поддерживается",
-    "speaking": "Лия говорит..."
+    "speaking": "Лия говорит...",
+    "uploadImage": "Загрузить фото"
   },
   "notifications": {
     "title": "Уведомления",
@@ -142,6 +154,7 @@
     "unreadNotifications": "Непрочитанные уведомления",
     "createTask": "Создать задачу",
     "addExpense": "Добавить расход",
+    "addIncome": "Добавить доход",
     "recentEvents": "Последние события",
     "noEvents": "Нет событий"
   },

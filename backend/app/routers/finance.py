@@ -2,19 +2,23 @@ import datetime as dt
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from sqlalchemy import func, extract
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.middleware.rbac import require_role
-from app.models.finance import Expense, Income, Payroll
+from app.models.finance import Expense, ExpenseCategory, Income, Payroll
 from app.models.user import RoleEnum, User
 from app.schemas.finance import (
+    CategorySummary,
     ExpenseCreate,
     ExpenseResponse,
+    ExpenseUpdate,
     FinanceSummary,
     IncomeCreate,
     IncomeResponse,
+    IncomeUpdate,
+    MonthlySummary,
     PayrollCreate,
     PayrollResponse,
     PayrollUpdate,
@@ -94,6 +98,39 @@ def create_expense(
     return expense
 
 
+@router.put("/expenses/{expense_id}", response_model=ExpenseResponse)
+def update_expense(
+    expense_id: int,
+    data: ExpenseUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found")
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(expense, field, value)
+
+    db.commit()
+    db.refresh(expense)
+    return expense
+
+
+@router.delete("/expenses/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_expense(
+    expense_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found")
+
+    db.delete(expense)
+    db.commit()
+
+
 # --- Income ---
 
 @router.get("/income", response_model=List[IncomeResponse])
@@ -117,38 +154,135 @@ def create_income(
     return income
 
 
+@router.put("/income/{income_id}", response_model=IncomeResponse)
+def update_income(
+    income_id: int,
+    data: IncomeUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    income = db.query(Income).filter(Income.id == income_id).first()
+    if not income:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Income not found")
+
+    for field, value in data.dict(exclude_unset=True).items():
+        setattr(income, field, value)
+
+    db.commit()
+    db.refresh(income)
+    return income
+
+
+@router.delete("/income/{income_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_income(
+    income_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    income = db.query(Income).filter(Income.id == income_id).first()
+    if not income:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Income not found")
+
+    db.delete(income)
+    db.commit()
+
+
 # --- Summary ---
 
 @router.get("/finance/summary", response_model=FinanceSummary)
 def finance_summary(
-    period_start: dt.date = Query(...),
-    period_end: dt.date = Query(...),
+    period_start: Optional[dt.date] = Query(None),
+    period_end: Optional[dt.date] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
 ):
-    total_payroll = (
+    # Default to current month
+    today = dt.date.today()
+    if not period_start:
+        period_start = today.replace(day=1)
+    if not period_end:
+        period_end = today
+
+    total_payroll = float(
         db.query(func.coalesce(func.sum(Payroll.net_amount), 0))
         .filter(Payroll.period_start >= period_start, Payroll.period_end <= period_end)
         .scalar()
     )
 
-    total_expenses = (
+    total_expenses = float(
         db.query(func.coalesce(func.sum(Expense.amount), 0))
         .filter(Expense.date >= period_start, Expense.date <= period_end)
         .scalar()
     )
 
-    total_income = (
+    total_income = float(
         db.query(func.coalesce(func.sum(Income.amount), 0))
         .filter(Income.date >= period_start, Income.date <= period_end)
         .scalar()
     )
 
+    balance = total_income - total_expenses - total_payroll
+
+    # Monthly breakdown (last 6 months)
+    six_months_ago = (today.replace(day=1) - dt.timedelta(days=1)).replace(day=1)
+    for _ in range(4):
+        six_months_ago = (six_months_ago - dt.timedelta(days=1)).replace(day=1)
+
+    monthly_income = (
+        db.query(
+            extract("year", Income.date).label("y"),
+            extract("month", Income.date).label("m"),
+            func.sum(Income.amount),
+        )
+        .filter(Income.date >= six_months_ago)
+        .group_by("y", "m")
+        .all()
+    )
+
+    monthly_expenses = (
+        db.query(
+            extract("year", Expense.date).label("y"),
+            extract("month", Expense.date).label("m"),
+            func.sum(Expense.amount),
+        )
+        .filter(Expense.date >= six_months_ago)
+        .group_by("y", "m")
+        .all()
+    )
+
+    months_map: dict[str, dict] = {}
+    for y, m, amt in monthly_income:
+        key = f"{int(y)}-{int(m):02d}"
+        months_map.setdefault(key, {"month": key, "income": 0, "expenses": 0})
+        months_map[key]["income"] = float(amt)
+
+    for y, m, amt in monthly_expenses:
+        key = f"{int(y)}-{int(m):02d}"
+        months_map.setdefault(key, {"month": key, "income": 0, "expenses": 0})
+        months_map[key]["expenses"] = float(amt)
+
+    monthly = [MonthlySummary(**v) for v in sorted(months_map.values(), key=lambda x: x["month"])]
+
+    # Expense by category (current period)
+    cat_rows = (
+        db.query(Expense.category, func.sum(Expense.amount))
+        .filter(Expense.date >= period_start, Expense.date <= period_end)
+        .group_by(Expense.category)
+        .all()
+    )
+    expense_by_category = [
+        CategorySummary(category=cat.value if isinstance(cat, ExpenseCategory) else str(cat), amount=float(amt))
+        for cat, amt in cat_rows
+    ]
+
     return FinanceSummary(
-        total_payroll=float(total_payroll),
-        total_expenses=float(total_expenses),
-        total_income=float(total_income),
-        net=float(total_income) - float(total_expenses) - float(total_payroll),
+        total_payroll=total_payroll,
+        total_expenses=total_expenses,
+        total_income=total_income,
+        net=balance,
+        balance=balance,
         period_start=period_start,
         period_end=period_end,
+        monthly=monthly,
+        expense_by_category=expense_by_category,
     )

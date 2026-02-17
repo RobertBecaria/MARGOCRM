@@ -272,6 +272,39 @@ def send_notification(db: Session, user_id: int, title: str, message: str, type:
     return {"message": "Notification sent"}
 
 
+def attach_image_to_task(db: Session, task_id: int, image_url: str) -> Dict:
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        return {"error": "Task not found"}
+    task.image_url = image_url
+    db.commit()
+    return {"id": task.id, "image_url": image_url, "message": f"Изображение прикреплено к задаче '{task.title}'"}
+
+
+def attach_image_to_expense(db: Session, expense_id: int, image_url: str) -> Dict:
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        return {"error": "Expense not found"}
+    expense.receipt_url = image_url
+    db.commit()
+    return {"id": expense.id, "receipt_url": image_url, "message": f"Чек прикреплён к расходу '{expense.description}'"}
+
+
+def create_expense_from_receipt(db: Session, category: str, description: str, amount: float, date: str, receipt_url: str, created_by: int) -> Dict:
+    expense = Expense(
+        category=ExpenseCategory(category),
+        description=description,
+        amount=amount,
+        date=dt.date.fromisoformat(date),
+        receipt_url=receipt_url,
+        created_by=created_by,
+    )
+    db.add(expense)
+    db.commit()
+    db.refresh(expense)
+    return {"id": expense.id, "amount": amount, "category": category, "message": f"Расход из чека добавлен: {description} — {amount}₽"}
+
+
 def create_schedule_change_request(db: Session, user_id: int, schedule_id: int, requested_date: str, reason: str) -> Dict:
     request = ScheduleChangeRequest(
         user_id=user_id,
@@ -305,6 +338,9 @@ TOOL_DISPATCH = {
     "create_income": create_income,
     "get_income": get_income,
     "send_notification": send_notification,
+    "attach_image_to_task": attach_image_to_task,
+    "attach_image_to_expense": attach_image_to_expense,
+    "create_expense_from_receipt": create_expense_from_receipt,
     "create_schedule_change_request": create_schedule_change_request,
 }
 
@@ -578,6 +614,54 @@ OWNER_TOOLS = [
                     "type": {"type": "string", "enum": ["schedule", "task", "payment", "system"]},
                 },
                 "required": ["user_id", "title", "message"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "attach_image_to_task",
+            "description": "Прикрепить загруженное изображение к задаче.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "integer", "description": "ID задачи"},
+                    "image_url": {"type": "string", "description": "URL загруженного изображения"},
+                },
+                "required": ["task_id", "image_url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "attach_image_to_expense",
+            "description": "Прикрепить фото чека к расходу.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expense_id": {"type": "integer", "description": "ID расхода"},
+                    "image_url": {"type": "string", "description": "URL загруженного изображения"},
+                },
+                "required": ["expense_id", "image_url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_expense_from_receipt",
+            "description": "Создать расход из загруженного чека/счёта. Используй когда пользователь загрузил фото чека и просит добавить в расходы.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "category": {"type": "string", "enum": ["household", "transport", "food", "entertainment", "other"]},
+                    "description": {"type": "string", "description": "Описание расхода"},
+                    "amount": {"type": "number", "description": "Сумма в рублях"},
+                    "date": {"type": "string", "description": "Дата YYYY-MM-DD"},
+                    "receipt_url": {"type": "string", "description": "URL загруженного чека"},
+                },
+                "required": ["category", "description", "amount", "date", "receipt_url"],
             },
         },
     },

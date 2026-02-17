@@ -87,10 +87,40 @@ class IncomeResponse(BaseModel):
         from_attributes = True
 
 
+class ExpenseUpdate(BaseModel):
+    category: Optional[ExpenseCategory] = None
+    description: Optional[str] = None
+    amount: Optional[float] = None
+    date: Optional[dt.date] = None
+    receipt_url: Optional[str] = None
+
+
+class IncomeUpdate(BaseModel):
+    source: Optional[str] = None
+    description: Optional[str] = None
+    amount: Optional[float] = None
+    date: Optional[dt.date] = None
+    category: Optional[str] = None
+
+
+class MonthlySummary(BaseModel):
+    month: str
+    income: float
+    expenses: float
+
+
+class CategorySummary(BaseModel):
+    category: str
+    amount: float
+
+
 class FinanceSummary(BaseModel):
     total_payroll: float
     total_expenses: float
     total_income: float
     net: float
+    balance: float
     period_start: dt.date
     period_end: dt.date
+    monthly: list[MonthlySummary] = []
+    expense_by_category: list[CategorySummary] = []

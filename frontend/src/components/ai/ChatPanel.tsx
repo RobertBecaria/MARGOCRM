@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Send, Loader2, Mic, MicOff, Sparkles } from "lucide-react";
+import { X, Send, Loader2, Mic, MicOff, Sparkles, ImagePlus } from "lucide-react";
 import { useChatStore, type ChatMessage as ChatMsg } from "../../store/chatStore";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import { useVoice } from "../../hooks/useVoice";
+import { uploadFile } from "../../api/uploads";
 import ChatMessage from "./ChatMessage";
 
 interface ChatPanelProps {
@@ -14,7 +15,9 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(fullScreen);
   const [input, setInput] = useState("");
+  const [uploading, setUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { messages, isTyping } = useChatStore();
   const { sendMessage } = useWebSocket();
@@ -58,6 +61,24 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
     }
   }
 
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const result = await uploadFile(file);
+      // Send message with the uploaded image URL
+      sendMessage(`[Загружено изображение: ${result.url}] ${input || "Фото загружено"}`);
+      setInput("");
+    } catch {
+      // Silently fail - user can try again
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   if (fullScreen) {
     return (
       <div className="flex flex-col h-[calc(100vh-7rem)] animate-fade-in">
@@ -80,11 +101,14 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
             onSend={handleSend}
             onKeyDown={handleKeyDown}
             onVoiceToggle={handleVoiceToggle}
+            onFileClick={() => fileInputRef.current?.click()}
             isListening={isListening}
+            uploading={uploading}
             voiceSupported={supported}
             t={t}
           />
         </div>
+        <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileUpload} />
       </div>
     );
   }
@@ -132,12 +156,15 @@ export default function ChatPanel({ fullScreen = false }: ChatPanelProps) {
             onSend={handleSend}
             onKeyDown={handleKeyDown}
             onVoiceToggle={handleVoiceToggle}
+            onFileClick={() => fileInputRef.current?.click()}
             isListening={isListening}
+            uploading={uploading}
             voiceSupported={supported}
             t={t}
           />
         </div>
       )}
+      <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleFileUpload} />
     </>
   );
 }
@@ -191,7 +218,9 @@ function InputBar({
   onSend,
   onKeyDown,
   onVoiceToggle,
+  onFileClick,
   isListening,
+  uploading,
   voiceSupported,
   t,
 }: {
@@ -200,7 +229,9 @@ function InputBar({
   onSend: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onVoiceToggle: () => void;
+  onFileClick: () => void;
   isListening: boolean;
+  uploading: boolean;
   voiceSupported: boolean;
   t: (k: string) => string;
 }) {
@@ -214,6 +245,16 @@ function InputBar({
         placeholder={t("ai.placeholder")}
         className="flex-1 rounded-lg px-3 py-2 text-sm text-purple-200 placeholder-gray-500 glass-input focus:outline-none"
       />
+
+      {/* Image upload button */}
+      <button
+        onClick={onFileClick}
+        disabled={uploading}
+        className="p-2 rounded-lg text-gray-400 hover:text-purple-200 hover:bg-white/10 transition-all disabled:opacity-30"
+        title={t("ai.uploadImage")}
+      >
+        {uploading ? <Loader2 size={16} className="animate-spin" /> : <ImagePlus size={16} />}
+      </button>
 
       {/* Voice button */}
       {voiceSupported && (

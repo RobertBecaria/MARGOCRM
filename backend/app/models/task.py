@@ -33,6 +33,7 @@ class Task(Base):
     priority: Mapped[PriorityEnum] = mapped_column(Enum(PriorityEnum), default=PriorityEnum.medium)
     status: Mapped[StatusEnum] = mapped_column(Enum(StatusEnum), default=StatusEnum.pending)
     due_date: Mapped[Optional[dt.date]] = mapped_column(Date)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
 
     assignee = relationship("User", foreign_keys=[assigned_to])

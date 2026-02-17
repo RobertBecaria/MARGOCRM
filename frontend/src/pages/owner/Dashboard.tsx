@@ -1,23 +1,27 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Users, CheckSquare, Wallet, Bell, Plus, Receipt } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Users, CheckSquare, Wallet, Bell, Plus, DollarSign } from "lucide-react";
 import { formatDistanceToNow, parseISO, format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import { getSchedules } from "../../api/schedules";
-import { getTasks } from "../../api/tasks";
+import { getTasks, createTask } from "../../api/tasks";
 import { getNotifications } from "../../api/notifications";
-import { getFinanceSummary } from "../../api/finance";
+import { getFinanceSummary, createIncome } from "../../api/finance";
+import { getUsers } from "../../api/users";
 import { formatMoney } from "../../utils/formatters";
+import type { TaskPriority } from "../../types";
 import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
+import Modal from "../../components/ui/Modal";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const today = format(new Date(), "yyyy-MM-dd");
 
@@ -41,6 +45,12 @@ export default function Dashboard() {
     queryFn: () => getFinanceSummary(),
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => getUsers(),
+  });
+  const staffList = users.filter((u) => u.role !== "owner");
+
   const pendingTasks = useMemo(() => tasks.filter((t) => t.status !== "done"), [tasks]);
   const { unreadCount, recentNotifs } = useMemo(() => {
     let count = 0;
@@ -49,6 +59,33 @@ export default function Dashboard() {
     }
     return { unreadCount: count, recentNotifs: notifications.slice(0, 10) };
   }, [notifications]);
+
+  // Task creation modal
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskForm, setTaskForm] = useState({ title: "", description: "", assigned_to: "", priority: "medium" as TaskPriority, due_date: "" });
+
+  const createTaskMut = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks-pending"] });
+      setTaskModalOpen(false);
+      setTaskForm({ title: "", description: "", assigned_to: "", priority: "medium", due_date: "" });
+    },
+  });
+
+  // Income creation modal
+  const [incomeModalOpen, setIncomeModalOpen] = useState(false);
+  const [incomeForm, setIncomeForm] = useState({ source: "", description: "", amount: "", date: "", category: "" });
+
+  const createIncomeMut = useMutation({
+    mutationFn: createIncome,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["income"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
+      setIncomeModalOpen(false);
+      setIncomeForm({ source: "", description: "", amount: "", date: "", category: "" });
+    },
+  });
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -92,13 +129,13 @@ export default function Dashboard() {
 
       {/* Quick actions */}
       <div className="flex gap-3">
-        <Button onClick={() => navigate("/tasks")}>
+        <Button onClick={() => setTaskModalOpen(true)}>
           <Plus size={16} />
           {t("dashboard.createTask")}
         </Button>
-        <Button variant="secondary" onClick={() => navigate("/finance")}>
-          <Receipt size={16} />
-          {t("dashboard.addExpense")}
+        <Button variant="secondary" onClick={() => setIncomeModalOpen(true)}>
+          <DollarSign size={16} />
+          {t("dashboard.addIncome")}
         </Button>
       </div>
 
@@ -129,6 +166,71 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Create Task Modal */}
+      <Modal open={taskModalOpen} onClose={() => setTaskModalOpen(false)} title={t("dashboard.createTask")}>
+        <div className="space-y-4">
+          <Input label={t("tasks.taskName")} value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} />
+          <Input label={t("tasks.description")} value={taskForm.description} onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })} />
+          <Select
+            label={t("tasks.assignee")}
+            options={[{ value: "", label: t("tasks.selectAssignee") }, ...staffList.map((u) => ({ value: String(u.id), label: u.full_name }))]}
+            value={taskForm.assigned_to}
+            onChange={(e) => setTaskForm({ ...taskForm, assigned_to: e.target.value })}
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label={t("tasks.priority")}
+              options={[
+                { value: "low", label: t("tasks.low") },
+                { value: "medium", label: t("tasks.medium") },
+                { value: "high", label: t("tasks.high") },
+                { value: "urgent", label: t("tasks.urgent") },
+              ]}
+              value={taskForm.priority}
+              onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
+            />
+            <Input label={t("tasks.dueDate")} type="date" value={taskForm.due_date} onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })} />
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" onClick={() => setTaskModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={() => createTaskMut.mutate({
+                title: taskForm.title,
+                description: taskForm.description || undefined,
+                assigned_to: Number(taskForm.assigned_to),
+                priority: taskForm.priority,
+                due_date: taskForm.due_date || undefined,
+              })}
+              loading={createTaskMut.isPending}
+              disabled={!taskForm.title || !taskForm.assigned_to}
+            >
+              {t("common.save")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Income Modal */}
+      <Modal open={incomeModalOpen} onClose={() => setIncomeModalOpen(false)} title={t("dashboard.addIncome")}>
+        <div className="space-y-4">
+          <Input label={t("finance.source")} value={incomeForm.source} onChange={(e) => setIncomeForm({ ...incomeForm, source: e.target.value })} />
+          <Input label={t("common.description")} value={incomeForm.description} onChange={(e) => setIncomeForm({ ...incomeForm, description: e.target.value })} />
+          <Input label={t("finance.amount")} type="number" value={incomeForm.amount} onChange={(e) => setIncomeForm({ ...incomeForm, amount: e.target.value })} />
+          <Input label={t("finance.category")} value={incomeForm.category} onChange={(e) => setIncomeForm({ ...incomeForm, category: e.target.value })} />
+          <Input label={t("common.date")} type="date" value={incomeForm.date} onChange={(e) => setIncomeForm({ ...incomeForm, date: e.target.value })} />
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" onClick={() => setIncomeModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={() => createIncomeMut.mutate({ ...incomeForm, amount: Number(incomeForm.amount) })}
+              loading={createIncomeMut.isPending}
+              disabled={!incomeForm.source || !incomeForm.amount}
+            >
+              {t("common.save")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

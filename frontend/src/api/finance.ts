@@ -18,12 +18,27 @@ interface ExpenseCreate {
   date: string;
 }
 
+interface ExpenseUpdate {
+  category?: ExpenseCategory;
+  description?: string;
+  amount?: number;
+  date?: string;
+}
+
 interface IncomeCreate {
   source: string;
   description: string;
   amount: number;
   date: string;
   category: string;
+}
+
+interface IncomeUpdate {
+  source?: string;
+  description?: string;
+  amount?: number;
+  date?: string;
+  category?: string;
 }
 
 export interface FinanceSummary {
@@ -60,6 +75,15 @@ export async function createExpense(data: ExpenseCreate): Promise<Expense> {
   return response.data;
 }
 
+export async function updateExpense(id: number, data: ExpenseUpdate): Promise<Expense> {
+  const response = await client.put<Expense>(`/expenses/${id}`, data);
+  return response.data;
+}
+
+export async function deleteExpense(id: number): Promise<void> {
+  await client.delete(`/expenses/${id}`);
+}
+
 export async function getIncome(): Promise<Income[]> {
   const response = await client.get<Income[]>("/income");
   return response.data;
@@ -70,7 +94,16 @@ export async function createIncome(data: IncomeCreate): Promise<Income> {
   return response.data;
 }
 
-export async function getFinanceSummary(period?: string): Promise<FinanceSummary> {
-  const response = await client.get<FinanceSummary>("/finance/summary", { params: { period } });
+export async function updateIncome(id: number, data: IncomeUpdate): Promise<Income> {
+  const response = await client.put<Income>(`/income/${id}`, data);
+  return response.data;
+}
+
+export async function deleteIncome(id: number): Promise<void> {
+  await client.delete(`/income/${id}`);
+}
+
+export async function getFinanceSummary(): Promise<FinanceSummary> {
+  const response = await client.get<FinanceSummary>("/finance/summary");
   return response.data;
 }

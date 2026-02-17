@@ -1,15 +1,17 @@
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Calendar, Bot } from "lucide-react";
+import { Calendar, Clock, LogIn, LogOut, Sparkles, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useAuth } from "../../hooks/useAuth";
 import { getSchedules } from "../../api/schedules";
 import { getTasks, updateTask } from "../../api/tasks";
+import { getTodayStatus, clockIn, clockOut } from "../../api/timecard";
 import type { TaskStatus } from "../../types";
 import { PRIORITY_COLOR, STATUS_FLOW, STATUS_LABEL_KEYS } from "../../utils/constants";
 import Badge from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 export default function MyDay() {
@@ -30,21 +32,106 @@ export default function MyDay() {
     enabled: !!user,
   });
 
+  const { data: timecard, isLoading: loadingTimecard } = useQuery({
+    queryKey: ["timecard-today"],
+    queryFn: getTodayStatus,
+    refetchInterval: 60_000,
+  });
+
   const updateMut = useMutation({
     mutationFn: ({ id, status }: { id: number; status: TaskStatus }) =>
       updateTask(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["my-tasks-active"] }),
   });
 
+  const clockInMut = useMutation({
+    mutationFn: clockIn,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["timecard-today"] }),
+  });
+
+  const clockOutMut = useMutation({
+    mutationFn: clockOut,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["timecard-today"] }),
+  });
+
   const activeTasks = tasks.filter((t) => t.status !== "done");
 
-  if (loadingSchedules || loadingTasks) return <LoadingSpinner />;
+  const isClockedIn = timecard && !timecard.clock_out;
+  const isClockError = clockInMut.isError || clockOutMut.isError;
+  const clockErrorMsg = (clockInMut.error as any)?.response?.data?.detail
+    || (clockOutMut.error as any)?.response?.data?.detail
+    || "";
+  const isIpadError = clockErrorMsg.includes("iPad");
+
+  // Calculate worked time
+  let workedTime = "";
+  if (timecard?.clock_in) {
+    const start = new Date(timecard.clock_in);
+    const end = timecard.clock_out ? new Date(timecard.clock_out) : new Date();
+    const diffMs = end.getTime() - start.getTime();
+    const hours = Math.floor(diffMs / 3600000);
+    const mins = Math.floor((diffMs % 3600000) / 60000);
+    workedTime = `${hours}ч ${mins}м`;
+  }
+
+  if (loadingSchedules || loadingTasks || loadingTimecard) return <LoadingSpinner />;
 
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold text-purple-200">
         {t("nav.myDay")}
       </h1>
+
+      {/* Clock in/out card */}
+      <div className="glass-card glow-border rounded-xl p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${isClockedIn ? "bg-green-500/15 text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)]" : "bg-gray-500/15 text-gray-400"}`}>
+              <Clock size={20} />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-purple-200">
+                {isClockedIn ? t("tasks.clockedIn") : (timecard?.clock_out ? t("tasks.clockedOut") : t("tasks.clockIn"))}
+              </div>
+              {timecard?.clock_in && (
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {t("tasks.clockInTime")}: {format(new Date(timecard.clock_in), "HH:mm")}
+                  {timecard.clock_out && (
+                    <> &middot; {t("tasks.clockOutTime")}: {format(new Date(timecard.clock_out), "HH:mm")}</>
+                  )}
+                  {workedTime && <> &middot; {t("tasks.workedTime")}: {workedTime}</>}
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            {isClockedIn ? (
+              <Button
+                onClick={() => clockOutMut.mutate()}
+                loading={clockOutMut.isPending}
+              >
+                <LogOut size={16} />
+                {t("tasks.clockOut")}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => clockInMut.mutate()}
+                loading={clockInMut.isPending}
+                disabled={!!timecard?.clock_out}
+              >
+                <LogIn size={16} />
+                {t("tasks.clockIn")}
+              </Button>
+            )}
+          </div>
+        </div>
+        {isClockError && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-red-400">
+            <AlertCircle size={14} />
+            {isIpadError ? t("tasks.ipadOnly") : clockErrorMsg}
+          </div>
+        )}
+      </div>
 
       {/* Today's schedule */}
       <div>
@@ -132,7 +219,7 @@ export default function MyDay() {
         className="flex items-center gap-3 glass-card rounded-xl p-4 hover:bg-white/[0.05] transition-colors"
       >
         <div className="p-2 rounded-lg bg-purple-500/15 text-purple-400">
-          <Bot size={20} />
+          <Sparkles size={20} />
         </div>
         <div>
           <div className="text-sm font-medium text-purple-200">

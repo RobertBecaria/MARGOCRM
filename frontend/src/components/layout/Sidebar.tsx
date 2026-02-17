@@ -19,10 +19,10 @@ import { useAuth } from "../../hooks/useAuth";
 
 const ownerNav = [
   { to: "/", icon: LayoutDashboard, label: "nav.dashboard" },
-  { to: "/staff", icon: Users, label: "nav.staff" },
   { to: "/schedules", icon: Calendar, label: "nav.schedules" },
   { to: "/tasks", icon: CheckSquare, label: "nav.tasks" },
   { to: "/finance", icon: Wallet, label: "nav.finance" },
+  { to: "/staff", icon: Users, label: "nav.staff" },
   { to: "/notifications", icon: Bell, label: "nav.notifications" },
   { to: "/settings", icon: Settings, label: "nav.settings" },
 ];

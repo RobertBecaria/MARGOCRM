@@ -13,6 +13,7 @@ class TaskCreate(BaseModel):
     description: Optional[str] = None
     priority: PriorityEnum = PriorityEnum.medium
     due_date: Optional[dt.date] = None
+    image_url: Optional[str] = None
 
 
 class TaskUpdate(BaseModel):
@@ -22,6 +23,7 @@ class TaskUpdate(BaseModel):
     priority: Optional[PriorityEnum] = None
     status: Optional[StatusEnum] = None
     due_date: Optional[dt.date] = None
+    image_url: Optional[str] = None
 
 
 class TaskResponse(BaseModel):
@@ -35,6 +37,7 @@ class TaskResponse(BaseModel):
     priority: PriorityEnum
     status: StatusEnum
     due_date: Optional[dt.date] = None
+    image_url: Optional[str] = None
     created_at: dt.datetime
 
     class Config:

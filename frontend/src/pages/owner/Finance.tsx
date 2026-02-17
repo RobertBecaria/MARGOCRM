@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, Pencil, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -10,8 +10,8 @@ import {
 } from "recharts";
 import {
   getPayroll, createPayroll, updatePayroll,
-  getExpenses, createExpense,
-  getIncome, createIncome,
+  getExpenses, createExpense, updateExpense, deleteExpense,
+  getIncome, createIncome, updateIncome, deleteIncome,
   getFinanceSummary,
 } from "../../api/finance";
 import { getUsers } from "../../api/users";
@@ -187,21 +187,54 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
 
 function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState({ category: "household" as ExpenseCategory, description: "", amount: "", date: "" });
 
   const { data: expenses = [], isLoading } = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
 
   const createMut = useMutation({
     mutationFn: createExpense,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); setModalOpen(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
   });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateExpense>[1] }) => updateExpense(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: deleteExpense,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
+  });
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditing(null);
+    setForm({ category: "household", description: "", amount: "", date: "" });
+  }
+
+  function openEdit(e: typeof expenses[0]) {
+    setEditing(e.id);
+    setForm({ category: e.category, description: e.description, amount: String(e.amount), date: e.date });
+    setModalOpen(true);
+  }
+
+  function handleSubmit() {
+    const payload = { ...form, amount: Number(form.amount) };
+    if (editing) {
+      updateMut.mutate({ id: editing, data: payload });
+    } else {
+      createMut.mutate(payload);
+    }
+  }
 
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setModalOpen(true)}>
+        <Button onClick={() => { closeModal(); setModalOpen(true); }}>
           <Plus size={16} />
           {t("finance.addExpense")}
         </Button>
@@ -210,19 +243,29 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       {expenses.length === 0 ? (
         <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
-        <Table headers={[t("finance.category"), t("common.description"), t("finance.amount"), t("common.date")]}>
+        <Table headers={[t("finance.category"), t("common.description"), t("finance.amount"), t("common.date"), ""]}>
           {expenses.map((e) => (
             <tr key={e.id}>
               <Td><Badge color="blue">{t(EXPENSE_CATEGORY_KEYS[e.category])}</Badge></Td>
               <Td>{e.description}</Td>
               <Td className="font-medium">{formatMoney(e.amount)}</Td>
               <Td>{format(parseISO(e.date), "d MMM yyyy", { locale: ru })}</Td>
+              <Td>
+                <div className="flex gap-1">
+                  <button onClick={() => openEdit(e)} className="p-1.5 rounded-md text-gray-400 hover:text-blue-400 hover:bg-white/10" title={t("common.edit")}>
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => setConfirmDeleteId(e.id)} className="p-1.5 rounded-md text-gray-400 hover:text-red-400 hover:bg-white/10" title={t("common.delete")}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </Td>
             </tr>
           ))}
         </Table>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t("finance.addExpense")}>
+      <Modal open={modalOpen} onClose={closeModal} title={editing ? t("finance.editExpense") : t("finance.addExpense")}>
         <div className="space-y-4">
           <Select
             label={t("finance.category")}
@@ -234,8 +277,21 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <div className="flex gap-3 justify-end pt-2">
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={() => createMut.mutate({ ...form, amount: Number(form.amount) })} loading={createMut.isPending}>{t("common.save")}</Button>
+            <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
+            <Button onClick={handleSubmit} loading={createMut.isPending || updateMut.isPending}>{t("common.save")}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete confirmation */}
+      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
+          <div className="flex gap-3 justify-end">
+            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
+            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
+              {t("common.delete")}
+            </Button>
           </div>
         </div>
       </Modal>
@@ -245,21 +301,54 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
 
 function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "" });
 
   const { data: incomeList = [], isLoading } = useQuery({ queryKey: ["income"], queryFn: getIncome });
 
   const createMut = useMutation({
     mutationFn: createIncome,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); setModalOpen(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
   });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateIncome>[1] }) => updateIncome(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: deleteIncome,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
+  });
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditing(null);
+    setForm({ source: "", description: "", amount: "", date: "", category: "" });
+  }
+
+  function openEdit(i: typeof incomeList[0]) {
+    setEditing(i.id);
+    setForm({ source: i.source, description: i.description, amount: String(i.amount), date: i.date, category: i.category });
+    setModalOpen(true);
+  }
+
+  function handleSubmit() {
+    const payload = { ...form, amount: Number(form.amount) };
+    if (editing) {
+      updateMut.mutate({ id: editing, data: payload });
+    } else {
+      createMut.mutate(payload);
+    }
+  }
 
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setModalOpen(true)}>
+        <Button onClick={() => { closeModal(); setModalOpen(true); }}>
           <Plus size={16} />
           {t("finance.addIncome")}
         </Button>
@@ -268,19 +357,29 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
       {incomeList.length === 0 ? (
         <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
-        <Table headers={[t("finance.source"), t("common.description"), t("finance.amount"), t("common.date")]}>
+        <Table headers={[t("finance.source"), t("common.description"), t("finance.amount"), t("common.date"), ""]}>
           {incomeList.map((i) => (
             <tr key={i.id}>
               <Td className="font-medium">{i.source}</Td>
               <Td>{i.description}</Td>
               <Td className="font-medium">{formatMoney(i.amount)}</Td>
               <Td>{format(parseISO(i.date), "d MMM yyyy", { locale: ru })}</Td>
+              <Td>
+                <div className="flex gap-1">
+                  <button onClick={() => openEdit(i)} className="p-1.5 rounded-md text-gray-400 hover:text-blue-400 hover:bg-white/10" title={t("common.edit")}>
+                    <Pencil size={14} />
+                  </button>
+                  <button onClick={() => setConfirmDeleteId(i.id)} className="p-1.5 rounded-md text-gray-400 hover:text-red-400 hover:bg-white/10" title={t("common.delete")}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </Td>
             </tr>
           ))}
         </Table>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t("finance.addIncome")}>
+      <Modal open={modalOpen} onClose={closeModal} title={editing ? t("finance.editIncome") : t("finance.addIncome")}>
         <div className="space-y-4">
           <Input label={t("finance.source")} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
           <Input label={t("common.description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
@@ -288,8 +387,21 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
           <Input label={t("finance.category")} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <div className="flex gap-3 justify-end pt-2">
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={() => createMut.mutate({ ...form, amount: Number(form.amount) })} loading={createMut.isPending}>{t("common.save")}</Button>
+            <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
+            <Button onClick={handleSubmit} loading={createMut.isPending || updateMut.isPending}>{t("common.save")}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete confirmation */}
+      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
+          <div className="flex gap-3 justify-end">
+            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
+            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
+              {t("common.delete")}
+            </Button>
           </div>
         </div>
       </Modal>
@@ -306,7 +418,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
   if (isLoading) return <LoadingSpinner />;
   if (!summary) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
 
-  const pieData = summary.expense_by_category.map((item) => ({
+  const pieData = (summary.expense_by_category || []).map((item) => ({
     name: EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory] ? t(EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory]) : item.category,
     value: item.amount,
   }));
@@ -336,7 +448,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
       </div>
 
       {/* Monthly bar chart */}
-      {summary.monthly.length > 0 && (
+      {(summary.monthly || []).length > 0 && (
         <div className="glass-card rounded-xl p-4">
           <h3 className="text-sm font-medium text-gray-300 mb-4">
             {t("finance.monthlyChart")}

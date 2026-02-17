@@ -135,7 +135,7 @@ class DeepSeekAgent:
                         func_args["_caller_id"] = user.id
 
                 # Inject current user ID where needed
-                if func_name == "create_expense":
+                if func_name in ("create_expense", "create_expense_from_receipt"):
                     func_args["created_by"] = user.id
 
                 # Execute tool

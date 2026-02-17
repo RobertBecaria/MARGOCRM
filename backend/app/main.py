@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import ai_chat, auth, finance, notifications, schedules, tasks, users
+from app.routers import ai_chat, auth, finance, notifications, schedules, tasks, timecard, uploads, users
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,8 @@ app.include_router(schedules.router)
 app.include_router(tasks.router)
 app.include_router(finance.router)
 app.include_router(notifications.router)
+app.include_router(timecard.router)
+app.include_router(uploads.router)
 app.include_router(ai_chat.router)
 
 
