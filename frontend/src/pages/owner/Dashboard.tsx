@@ -141,6 +141,33 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Finance overview */}
+      {summary && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <SummaryCard
+            icon={DollarSign}
+            label={t("finance.income")}
+            value={formatMoney(summary.total_income)}
+            color="green"
+            delay={4}
+          />
+          <SummaryCard
+            icon={Receipt}
+            label={t("finance.expenses")}
+            value={formatMoney(summary.total_expenses + summary.total_payroll)}
+            color="red"
+            delay={5}
+          />
+          <SummaryCard
+            icon={Wallet}
+            label={t("finance.balance")}
+            value={formatMoney(summary.balance)}
+            color={summary.balance >= 0 ? "green" : "red"}
+            delay={6}
+          />
+        </div>
+      )}
+
       {/* Quick actions */}
       <div className="flex flex-wrap gap-3">
         <Button onClick={() => setTaskModalOpen(true)}>
@@ -289,6 +316,7 @@ const glowColors = {
   orange: "rgba(249, 115, 22, 0.15)",
   red: "rgba(239, 68, 68, 0.15)",
   purple: "rgba(139, 92, 246, 0.15)",
+  green: "rgba(34, 197, 94, 0.15)",
 };
 
 const iconBg = {
@@ -296,13 +324,14 @@ const iconBg = {
   orange: "bg-orange-500/15 text-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]",
   red: "bg-red-500/15 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]",
   purple: "bg-purple-500/15 text-purple-400 shadow-[0_0_15px_rgba(139,92,246,0.3)]",
+  green: "bg-green-500/15 text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.3)]",
 };
 
 function SummaryCard({ icon: Icon, label, value, color, delay }: {
   icon: typeof Users;
   label: string;
   value: string;
-  color: "blue" | "orange" | "red" | "purple";
+  color: "blue" | "orange" | "red" | "purple" | "green";
   delay: number;
 }) {
   return (
