@@ -71,4 +71,5 @@ class Income(Base):
     amount: Mapped[float] = mapped_column(Numeric(12, 2))
     date: Mapped[dt.date] = mapped_column(Date)
     category: Mapped[str] = mapped_column(String(100))
+    receipt_url: Mapped[Optional[str]] = mapped_column(String(500))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())

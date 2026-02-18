@@ -24,6 +24,7 @@ interface ExpenseUpdate {
   description?: string;
   amount?: number;
   date?: string;
+  receipt_url?: string;
 }
 
 interface IncomeCreate {
@@ -32,6 +33,7 @@ interface IncomeCreate {
   amount: number;
   date: string;
   category: string;
+  receipt_url?: string;
 }
 
 interface IncomeUpdate {
@@ -40,6 +42,7 @@ interface IncomeUpdate {
   amount?: number;
   date?: string;
   category?: string;
+  receipt_url?: string;
 }
 
 export interface FinanceSummary {

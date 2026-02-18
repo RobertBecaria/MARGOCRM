@@ -85,6 +85,7 @@ export interface Income {
   amount: number;
   date: string;
   category: string;
+  receipt_url: string | null;
 }
 
 export interface AiMessage {

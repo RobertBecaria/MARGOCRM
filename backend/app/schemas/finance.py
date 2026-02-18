@@ -73,6 +73,7 @@ class IncomeCreate(BaseModel):
     amount: float
     date: dt.date
     category: str
+    receipt_url: Optional[str] = None
 
 
 class IncomeResponse(BaseModel):
@@ -82,6 +83,7 @@ class IncomeResponse(BaseModel):
     amount: float
     date: dt.date
     category: str
+    receipt_url: Optional[str] = None
     created_at: dt.datetime
 
     class Config:
@@ -107,6 +109,7 @@ class IncomeUpdate(BaseModel):
     amount: Optional[float] = None
     date: Optional[dt.date] = None
     category: Optional[str] = None
+    receipt_url: Optional[str] = None
 
 
 class MonthlySummary(BaseModel):

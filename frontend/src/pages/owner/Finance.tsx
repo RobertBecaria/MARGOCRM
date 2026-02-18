@@ -399,7 +399,9 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "" });
+  const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "" });
+  const [receiptUploading, setReceiptUploading] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const { data: incomeList = [], isLoading } = useQuery({ queryKey: ["income"], queryFn: getIncome });
   const { data: categories = [] } = useQuery({ queryKey: ["categories", "income"], queryFn: () => getCategories("income") });
@@ -422,21 +424,36 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   function closeModal() {
     setModalOpen(false);
     setEditing(null);
-    setForm({ source: "", description: "", amount: "", date: "", category: "" });
+    setForm({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "" });
   }
 
   function openEdit(i: typeof incomeList[0]) {
     setEditing(i.id);
-    setForm({ source: i.source, description: i.description, amount: String(i.amount), date: i.date, category: i.category });
+    setForm({ source: i.source, description: i.description, amount: String(i.amount), date: i.date, category: i.category, receipt_url: i.receipt_url || "" });
     setModalOpen(true);
   }
 
   function handleSubmit() {
-    const payload = { ...form, amount: Number(form.amount) };
+    const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined };
     if (editing) {
       updateMut.mutate({ id: editing, data: payload });
     } else {
       createMut.mutate(payload);
+    }
+  }
+
+  async function handleReceiptUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptUploading(true);
+    try {
+      const result = await uploadFile(file);
+      setForm((prev) => ({ ...prev, receipt_url: result.url }));
+    } catch {
+      // silently fail
+    } finally {
+      setReceiptUploading(false);
+      if (receiptInputRef.current) receiptInputRef.current.value = "";
     }
   }
 
@@ -458,7 +475,16 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
           {incomeList.map((i) => (
             <tr key={i.id}>
               <Td className="font-medium">{i.source}</Td>
-              <Td>{i.description}</Td>
+              <Td>
+                <div>
+                  {i.description}
+                  {i.receipt_url && (
+                    <a href={i.receipt_url} target="_blank" rel="noreferrer" className="text-xs text-blue-400 ml-2">
+                      {t("expenses.viewReceipt")}
+                    </a>
+                  )}
+                </div>
+              </Td>
               <Td className="font-medium">{formatMoney(i.amount)}</Td>
               <Td>{format(parseISO(i.date), "d MMM yyyy", { locale: ru })}</Td>
               <Td>
@@ -488,6 +514,27 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+
+          {/* Receipt upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{t("expenses.receipt")}</label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => receiptInputRef.current?.click()}
+                disabled={receiptUploading}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm glass-input text-gray-400 hover:text-purple-200 transition-colors disabled:opacity-50"
+              >
+                {receiptUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {t("expenses.uploadReceipt")}
+              </button>
+              {form.receipt_url && (
+                <span className="text-xs text-green-400">{t("expenses.receiptUploaded")}</span>
+              )}
+            </div>
+            <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload} />
+          </div>
+
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
             <Button onClick={handleSubmit} loading={createMut.isPending || updateMut.isPending}>{t("common.save")}</Button>
