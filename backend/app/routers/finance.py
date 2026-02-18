@@ -11,6 +11,7 @@ from app.models.finance import Expense, Income, Payroll
 from app.models.user import RoleEnum, User
 from app.schemas.finance import (
     CategorySummary,
+    ExpenseApproval,
     ExpenseCreate,
     ExpenseResponse,
     ExpenseUpdate,
@@ -79,19 +80,35 @@ def update_payroll(
 
 @router.get("/expenses", response_model=List[ExpenseResponse])
 def list_expenses(
+    status_filter: Optional[str] = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+    current_user: User = Depends(get_current_user),
 ):
-    return db.query(Expense).order_by(Expense.date.desc()).all()
+    query = db.query(Expense)
+
+    # Staff can only see their own expenses
+    if current_user.role not in (RoleEnum.owner, RoleEnum.manager):
+        query = query.filter(Expense.created_by == current_user.id)
+
+    if status_filter:
+        query = query.filter(Expense.status == status_filter)
+
+    return query.order_by(Expense.date.desc()).all()
 
 
 @router.post("/expenses", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 def create_expense(
     data: ExpenseCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+    current_user: User = Depends(get_current_user),
 ):
-    expense = Expense(**data.dict(), created_by=current_user.id)
+    # Owner/manager expenses are auto-approved
+    auto_approve = current_user.role in (RoleEnum.owner, RoleEnum.manager)
+    expense = Expense(
+        **data.dict(),
+        created_by=current_user.id,
+        status="approved" if auto_approve else "pending",
+    )
     db.add(expense)
     db.commit()
     db.refresh(expense)
@@ -112,6 +129,27 @@ def update_expense(
     for field, value in data.dict(exclude_unset=True).items():
         setattr(expense, field, value)
 
+    db.commit()
+    db.refresh(expense)
+    return expense
+
+
+@router.put("/expenses/{expense_id}/approve", response_model=ExpenseResponse)
+def approve_expense(
+    expense_id: int,
+    data: ExpenseApproval,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    if not expense:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expense not found")
+
+    if data.status not in ("approved", "rejected"):
+        raise HTTPException(status_code=400, detail="Status must be 'approved' or 'rejected'")
+
+    expense.status = data.status
+    expense.approved_by = current_user.id
     db.commit()
     db.refresh(expense)
     return expense
@@ -209,7 +247,9 @@ def finance_summary(
     )
 
     total_expenses = float(
-        db.query(func.coalesce(func.sum(Expense.amount), 0)).scalar()
+        db.query(func.coalesce(func.sum(Expense.amount), 0))
+        .filter(Expense.status == "approved")
+        .scalar()
     )
 
     total_income = float(
@@ -241,6 +281,7 @@ def finance_summary(
             func.sum(Expense.amount),
         )
         .filter(Expense.date >= six_months_ago)
+        .filter(Expense.status == "approved")
         .group_by("y", "m")
         .all()
     )
@@ -277,6 +318,7 @@ def finance_summary(
     # Expense by category (all-time)
     cat_rows = (
         db.query(Expense.category, func.sum(Expense.amount))
+        .filter(Expense.status == "approved")
         .group_by(Expense.category)
         .all()
     )

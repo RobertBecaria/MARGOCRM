@@ -197,6 +197,20 @@
     "noAccount": "Нет аккаунта?",
     "selectRole": "Уровень доступа"
   },
+  "expenses": {
+    "myExpenses": "Мои расходы",
+    "addExpense": "Добавить расход",
+    "noExpenses": "Нет расходов",
+    "pending": "На проверке",
+    "approved": "Одобрено",
+    "rejected": "Отклонено",
+    "receipt": "Чек",
+    "uploadReceipt": "Загрузить чек",
+    "receiptUploaded": "Чек загружен",
+    "viewReceipt": "Посмотреть чек",
+    "approve": "Одобрить",
+    "reject": "Отклонить"
+  },
   "common": {
     "save": "Сохранить",
     "cancel": "Отмена",

@@ -21,6 +21,12 @@ class ExpenseCategory(str, enum.Enum):
     other = "other"
 
 
+class ExpenseStatus(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+
 class Payroll(Base):
     __tablename__ = "payroll"
 
@@ -50,6 +56,7 @@ class Expense(Base):
     approved_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+    status: Mapped[str] = mapped_column(String(20), default="pending")
 
     approver = relationship("User", foreign_keys=[approved_by])
     creator = relationship("User", foreign_keys=[created_by])

@@ -75,6 +75,7 @@ export interface Expense {
   receipt_url: string | null;
   approved_by: number | null;
   created_by: number;
+  status: string;
 }
 
 export interface Income {

@@ -61,6 +61,7 @@ class ExpenseResponse(BaseModel):
     approved_by: Optional[int] = None
     created_by: int
     created_at: dt.datetime
+    status: str = "pending"
 
     class Config:
         from_attributes = True
@@ -93,6 +94,11 @@ class ExpenseUpdate(BaseModel):
     amount: Optional[float] = None
     date: Optional[dt.date] = None
     receipt_url: Optional[str] = None
+    status: Optional[str] = None
+
+
+class ExpenseApproval(BaseModel):
+    status: str  # "approved" or "rejected"
 
 
 class IncomeUpdate(BaseModel):

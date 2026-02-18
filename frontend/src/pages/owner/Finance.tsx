@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check, Pencil, Trash2 } from "lucide-react";
+import { Plus, Check, Pencil, Trash2, X, Camera, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -10,10 +10,11 @@ import {
 } from "recharts";
 import {
   getPayroll, createPayroll, updatePayroll,
-  getExpenses, createExpense, updateExpense, deleteExpense,
+  getExpenses, createExpense, updateExpense, deleteExpense, approveExpense,
   getIncome, createIncome, updateIncome, deleteIncome,
   getFinanceSummary,
 } from "../../api/finance";
+import { uploadFile } from "../../api/uploads";
 import { getUsers } from "../../api/users";
 import type { PayrollStatus } from "../../types";
 import { getCategories } from "../../api/categories";
@@ -189,9 +190,12 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({ category: "", description: "", amount: "", date: "" });
+  const [statusFilter, setStatusFilter] = useState("");
+  const [form, setForm] = useState({ category: "", description: "", amount: "", date: "", receipt_url: "" });
+  const [receiptUploading, setReceiptUploading] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: expenses = [], isLoading } = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
+  const { data: expenses = [], isLoading } = useQuery({ queryKey: ["expenses", statusFilter], queryFn: () => getExpenses(statusFilter || undefined) });
   const { data: categories = [] } = useQuery({ queryKey: ["categories", "expense"], queryFn: () => getCategories("expense") });
 
   const createMut = useMutation({
@@ -209,20 +213,28 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
   });
 
+  const approveMut = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: "approved" | "rejected" }) => approveExpense(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
+    },
+  });
+
   function closeModal() {
     setModalOpen(false);
     setEditing(null);
-    setForm({ category: "", description: "", amount: "", date: "" });
+    setForm({ category: "", description: "", amount: "", date: "", receipt_url: "" });
   }
 
   function openEdit(e: typeof expenses[0]) {
     setEditing(e.id);
-    setForm({ category: e.category, description: e.description, amount: String(e.amount), date: e.date });
+    setForm({ category: e.category, description: e.description, amount: String(e.amount), date: e.date, receipt_url: e.receipt_url || "" });
     setModalOpen(true);
   }
 
   function handleSubmit() {
-    const payload = { ...form, amount: Number(form.amount) };
+    const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined };
     if (editing) {
       updateMut.mutate({ id: editing, data: payload });
     } else {
@@ -230,11 +242,41 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
     }
   }
 
+  async function handleReceiptUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptUploading(true);
+    try {
+      const result = await uploadFile(file);
+      setForm((prev) => ({ ...prev, receipt_url: result.url }));
+    } catch {
+      // silently fail
+    } finally {
+      setReceiptUploading(false);
+      if (receiptInputRef.current) receiptInputRef.current.value = "";
+    }
+  }
+
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          {["", "pending", "approved", "rejected"].map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                statusFilter === s
+                  ? "bg-blue-500/15 text-blue-400 font-medium"
+                  : "text-gray-500 hover:bg-white/10"
+              }`}
+            >
+              {s === "" ? t("notifications.all") : t(`expenses.${s}`)}
+            </button>
+          ))}
+        </div>
         <Button onClick={() => { closeModal(); setModalOpen(true); }}>
           <Plus size={16} />
           {t("finance.addExpense")}
@@ -244,15 +286,47 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       {expenses.length === 0 ? (
         <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
-        <Table headers={[t("finance.category"), t("common.description"), t("finance.amount"), t("common.date"), ""]}>
+        <Table headers={[t("finance.category"), t("common.description"), t("finance.amount"), t("common.date"), t("staff.status"), ""]}>
           {expenses.map((e) => (
             <tr key={e.id}>
               <Td><Badge color="blue">{e.category}</Badge></Td>
-              <Td>{e.description}</Td>
+              <Td>
+                <div>
+                  {e.description}
+                  {e.receipt_url && (
+                    <a href={e.receipt_url} target="_blank" rel="noreferrer" className="text-xs text-blue-400 ml-2">
+                      {t("expenses.viewReceipt")}
+                    </a>
+                  )}
+                </div>
+              </Td>
               <Td className="font-medium">{formatMoney(e.amount)}</Td>
               <Td>{format(parseISO(e.date), "d MMM yyyy", { locale: ru })}</Td>
               <Td>
+                <Badge color={e.status === "approved" ? "green" : e.status === "rejected" ? "red" : "orange"}>
+                  {t(`expenses.${e.status}`)}
+                </Badge>
+              </Td>
+              <Td>
                 <div className="flex gap-1">
+                  {e.status === "pending" && (
+                    <>
+                      <button
+                        onClick={() => approveMut.mutate({ id: e.id, status: "approved" })}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-green-400 hover:bg-white/10"
+                        title={t("expenses.approve")}
+                      >
+                        <Check size={14} />
+                      </button>
+                      <button
+                        onClick={() => approveMut.mutate({ id: e.id, status: "rejected" })}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-400 hover:bg-white/10"
+                        title={t("expenses.reject")}
+                      >
+                        <X size={14} />
+                      </button>
+                    </>
+                  )}
                   <button onClick={() => openEdit(e)} className="p-1.5 rounded-md text-gray-400 hover:text-blue-400 hover:bg-white/10" title={t("common.edit")}>
                     <Pencil size={14} />
                   </button>
@@ -277,6 +351,27 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
           <Input label={t("common.description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+
+          {/* Receipt upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{t("expenses.receipt")}</label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => receiptInputRef.current?.click()}
+                disabled={receiptUploading}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm glass-input text-gray-400 hover:text-purple-200 transition-colors disabled:opacity-50"
+              >
+                {receiptUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {t("expenses.uploadReceipt")}
+              </button>
+              {form.receipt_url && (
+                <span className="text-xs text-green-400">{t("expenses.receiptUploaded")}</span>
+              )}
+            </div>
+            <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload} />
+          </div>
+
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
             <Button onClick={handleSubmit} loading={createMut.isPending || updateMut.isPending}>{t("common.save")}</Button>

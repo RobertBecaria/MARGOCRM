@@ -16,6 +16,7 @@ interface ExpenseCreate {
   description: string;
   amount: number;
   date: string;
+  receipt_url?: string;
 }
 
 interface ExpenseUpdate {
@@ -65,8 +66,14 @@ export async function updatePayroll(id: number, data: { status?: PayrollStatus; 
   return response.data;
 }
 
-export async function getExpenses(): Promise<Expense[]> {
-  const response = await client.get<Expense[]>("/expenses");
+export async function getExpenses(status?: string): Promise<Expense[]> {
+  const params = status ? { status } : {};
+  const response = await client.get<Expense[]>("/expenses", { params });
+  return response.data;
+}
+
+export async function approveExpense(id: number, status: "approved" | "rejected"): Promise<Expense> {
+  const response = await client.put<Expense>(`/expenses/${id}/approve`, { status });
   return response.data;
 }
 
