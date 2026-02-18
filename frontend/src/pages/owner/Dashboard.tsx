@@ -9,9 +9,10 @@ import { getSchedules } from "../../api/schedules";
 import { getTasks, createTask } from "../../api/tasks";
 import { getNotifications } from "../../api/notifications";
 import { getFinanceSummary, createIncome, createExpense } from "../../api/finance";
+import { getCategories } from "../../api/categories";
 import { getUsers } from "../../api/users";
 import { formatMoney } from "../../utils/formatters";
-import type { TaskPriority, ExpenseCategory } from "../../types";
+import type { TaskPriority } from "../../types";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
@@ -74,8 +75,9 @@ export default function Dashboard() {
   });
 
   // Expense creation modal
+  const { data: expenseCategories = [] } = useQuery({ queryKey: ["categories", "expense"], queryFn: () => getCategories("expense") });
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ category: "other" as ExpenseCategory, description: "", amount: "", date: "" });
+  const [expenseForm, setExpenseForm] = useState({ category: "", description: "", amount: "", date: "" });
 
   const createExpenseMut = useMutation({
     mutationFn: createExpense,
@@ -83,7 +85,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
       setExpenseModalOpen(false);
-      setExpenseForm({ category: "other", description: "", amount: "", date: "" });
+      setExpenseForm({ category: "", description: "", amount: "", date: "" });
     },
   });
 
@@ -261,15 +263,9 @@ export default function Dashboard() {
         <div className="space-y-4">
           <Select
             label={t("finance.category")}
-            options={[
-              { value: "household", label: t("finance.catHousehold") },
-              { value: "transport", label: t("finance.catTransport") },
-              { value: "food", label: t("finance.catFood") },
-              { value: "entertainment", label: t("finance.catEntertainment") },
-              { value: "other", label: t("finance.catOther") },
-            ]}
+            options={expenseCategories.map((c) => ({ value: c.name, label: c.name }))}
             value={expenseForm.category}
-            onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value as ExpenseCategory })}
+            onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
           />
           <Input label={t("common.description")} value={expenseForm.description} onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} />

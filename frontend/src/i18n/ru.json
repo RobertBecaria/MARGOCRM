@@ -172,7 +172,12 @@
     "newPassword": "Новый пароль",
     "confirmNewPassword": "Подтвердите новый пароль",
     "passwordChanged": "Пароль успешно изменён",
-    "wrongPassword": "Неверный текущий пароль"
+    "wrongPassword": "Неверный текущий пароль",
+    "financeCategories": "Категории финансов",
+    "expenseCategories": "Категории расходов",
+    "incomeCategories": "Категории доходов",
+    "addCategory": "Добавить категорию",
+    "categoryName": "Название категории"
   },
   "auth": {
     "login": "Войти",

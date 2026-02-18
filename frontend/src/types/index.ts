@@ -3,8 +3,16 @@ export type TaskPriority = "low" | "medium" | "high" | "urgent";
 export type TaskStatus = "pending" | "in_progress" | "done";
 export type ScheduleStatus = "scheduled" | "completed" | "cancelled";
 export type PayrollStatus = "pending" | "paid";
-export type ExpenseCategory = "household" | "transport" | "food" | "entertainment" | "other";
+export type ExpenseCategory = string;
 export type NotificationType = "schedule" | "task" | "payment" | "system";
+
+export interface FinanceCategory {
+  id: number;
+  name: string;
+  type: "expense" | "income";
+  is_default: boolean;
+  created_at: string;
+}
 
 export interface User {
   id: number;

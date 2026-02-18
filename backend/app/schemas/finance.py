@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.models.finance import ExpenseCategory, PayrollStatus
+from app.models.finance import PayrollStatus
 from app.schemas.user import UserResponse
 
 
@@ -44,7 +44,7 @@ class PayrollResponse(BaseModel):
 
 
 class ExpenseCreate(BaseModel):
-    category: ExpenseCategory
+    category: str
     description: str
     amount: float
     date: dt.date
@@ -53,7 +53,7 @@ class ExpenseCreate(BaseModel):
 
 class ExpenseResponse(BaseModel):
     id: int
-    category: ExpenseCategory
+    category: str
     description: str
     amount: float
     date: dt.date
@@ -88,7 +88,7 @@ class IncomeResponse(BaseModel):
 
 
 class ExpenseUpdate(BaseModel):
-    category: Optional[ExpenseCategory] = None
+    category: Optional[str] = None
     description: Optional[str] = None
     amount: Optional[float] = None
     date: Optional[dt.date] = None
@@ -107,6 +107,7 @@ class MonthlySummary(BaseModel):
     month: str
     income: float
     expenses: float
+    payroll: float = 0
 
 
 class CategorySummary(BaseModel):

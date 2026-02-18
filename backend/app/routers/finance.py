@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.middleware.rbac import require_role
-from app.models.finance import Expense, ExpenseCategory, Income, Payroll
+from app.models.finance import Expense, Income, Payroll
 from app.models.user import RoleEnum, User
 from app.schemas.finance import (
     CategorySummary,
@@ -245,16 +245,32 @@ def finance_summary(
         .all()
     )
 
+    monthly_payroll = (
+        db.query(
+            extract("year", Payroll.period_end).label("y"),
+            extract("month", Payroll.period_end).label("m"),
+            func.sum(Payroll.net_amount),
+        )
+        .filter(Payroll.period_end >= six_months_ago)
+        .group_by("y", "m")
+        .all()
+    )
+
     months_map: dict[str, dict] = {}
     for y, m, amt in monthly_income:
         key = f"{int(y)}-{int(m):02d}"
-        months_map.setdefault(key, {"month": key, "income": 0, "expenses": 0})
+        months_map.setdefault(key, {"month": key, "income": 0, "expenses": 0, "payroll": 0})
         months_map[key]["income"] = float(amt)
 
     for y, m, amt in monthly_expenses:
         key = f"{int(y)}-{int(m):02d}"
-        months_map.setdefault(key, {"month": key, "income": 0, "expenses": 0})
+        months_map.setdefault(key, {"month": key, "income": 0, "expenses": 0, "payroll": 0})
         months_map[key]["expenses"] = float(amt)
+
+    for y, m, amt in monthly_payroll:
+        key = f"{int(y)}-{int(m):02d}"
+        months_map.setdefault(key, {"month": key, "income": 0, "expenses": 0, "payroll": 0})
+        months_map[key]["payroll"] = float(amt)
 
     monthly = [MonthlySummary(**v) for v in sorted(months_map.values(), key=lambda x: x["month"])]
 
@@ -265,9 +281,12 @@ def finance_summary(
         .all()
     )
     expense_by_category = [
-        CategorySummary(category=cat.value if isinstance(cat, ExpenseCategory) else str(cat), amount=float(amt))
+        CategorySummary(category=str(cat), amount=float(amt))
         for cat, amt in cat_rows
     ]
+
+    if total_payroll > 0:
+        expense_by_category.append(CategorySummary(category="Зарплаты", amount=total_payroll))
 
     return FinanceSummary(
         total_payroll=total_payroll,

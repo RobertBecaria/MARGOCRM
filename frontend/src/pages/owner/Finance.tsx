@@ -15,8 +15,8 @@ import {
   getFinanceSummary,
 } from "../../api/finance";
 import { getUsers } from "../../api/users";
-import type { ExpenseCategory, PayrollStatus } from "../../types";
-import { EXPENSE_CATEGORY_KEYS } from "../../utils/constants";
+import type { PayrollStatus } from "../../types";
+import { getCategories } from "../../api/categories";
 import { formatMoney } from "../../utils/formatters";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -189,9 +189,10 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({ category: "household" as ExpenseCategory, description: "", amount: "", date: "" });
+  const [form, setForm] = useState({ category: "", description: "", amount: "", date: "" });
 
   const { data: expenses = [], isLoading } = useQuery({ queryKey: ["expenses"], queryFn: getExpenses });
+  const { data: categories = [] } = useQuery({ queryKey: ["categories", "expense"], queryFn: () => getCategories("expense") });
 
   const createMut = useMutation({
     mutationFn: createExpense,
@@ -211,7 +212,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   function closeModal() {
     setModalOpen(false);
     setEditing(null);
-    setForm({ category: "household", description: "", amount: "", date: "" });
+    setForm({ category: "", description: "", amount: "", date: "" });
   }
 
   function openEdit(e: typeof expenses[0]) {
@@ -246,7 +247,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
         <Table headers={[t("finance.category"), t("common.description"), t("finance.amount"), t("common.date"), ""]}>
           {expenses.map((e) => (
             <tr key={e.id}>
-              <Td><Badge color="blue">{t(EXPENSE_CATEGORY_KEYS[e.category])}</Badge></Td>
+              <Td><Badge color="blue">{e.category}</Badge></Td>
               <Td>{e.description}</Td>
               <Td className="font-medium">{formatMoney(e.amount)}</Td>
               <Td>{format(parseISO(e.date), "d MMM yyyy", { locale: ru })}</Td>
@@ -269,9 +270,9 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
         <div className="space-y-4">
           <Select
             label={t("finance.category")}
-            options={Object.entries(EXPENSE_CATEGORY_KEYS).map(([v, key]) => ({ value: v, label: t(key) }))}
+            options={categories.map((c) => ({ value: c.name, label: c.name }))}
             value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value as ExpenseCategory })}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
           />
           <Input label={t("common.description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
@@ -306,6 +307,7 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "" });
 
   const { data: incomeList = [], isLoading } = useQuery({ queryKey: ["income"], queryFn: getIncome });
+  const { data: categories = [] } = useQuery({ queryKey: ["categories", "income"], queryFn: () => getCategories("income") });
 
   const createMut = useMutation({
     mutationFn: createIncome,
@@ -384,7 +386,12 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
           <Input label={t("finance.source")} value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
           <Input label={t("common.description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-          <Input label={t("finance.category")} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+          <Select
+            label={t("finance.category")}
+            options={categories.map((c) => ({ value: c.name, label: c.name }))}
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+          />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
@@ -419,7 +426,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
   if (!summary) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
 
   const pieData = (summary.expense_by_category || []).map((item) => ({
-    name: EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory] ? t(EXPENSE_CATEGORY_KEYS[item.category as ExpenseCategory]) : item.category,
+    name: item.category,
     value: item.amount,
   }));
 
@@ -462,6 +469,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
               <Legend />
               <Bar dataKey="income" name={t("finance.income")} fill="#22c55e" radius={[4, 4, 0, 0]} />
               <Bar dataKey="expenses" name={t("finance.expenses")} fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="payroll" name={t("finance.payroll")} fill="#a855f7" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

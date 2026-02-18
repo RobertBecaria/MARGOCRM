@@ -1,5 +1,5 @@
 import client from "./client";
-import type { Payroll, Expense, Income, PayrollStatus, ExpenseCategory } from "../types";
+import type { Payroll, Expense, Income, PayrollStatus } from "../types";
 
 interface PayrollCreate {
   user_id: number;
@@ -12,14 +12,14 @@ interface PayrollCreate {
 }
 
 interface ExpenseCreate {
-  category: ExpenseCategory;
+  category: string;
   description: string;
   amount: number;
   date: string;
 }
 
 interface ExpenseUpdate {
-  category?: ExpenseCategory;
+  category?: string;
   description?: string;
   amount?: number;
   date?: string;
@@ -46,7 +46,7 @@ export interface FinanceSummary {
   total_expenses: number;
   total_payroll: number;
   balance: number;
-  monthly: Array<{ month: string; income: number; expenses: number }>;
+  monthly: Array<{ month: string; income: number; expenses: number; payroll: number }>;
   expense_by_category: Array<{ category: string; amount: number }>;
 }
 

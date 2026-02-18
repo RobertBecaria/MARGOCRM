@@ -42,7 +42,7 @@ class Expense(Base):
     __tablename__ = "expenses"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    category: Mapped[ExpenseCategory] = mapped_column(Enum(ExpenseCategory))
+    category: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(String(500))
     amount: Mapped[float] = mapped_column(Numeric(12, 2))
     date: Mapped[dt.date] = mapped_column(Date)

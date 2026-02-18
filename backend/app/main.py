@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import ai_chat, auth, finance, notifications, schedules, tasks, timecard, uploads, users
+from app.routers import ai_chat, auth, categories, finance, notifications, schedules, tasks, timecard, uploads, users
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(categories.router)
 app.include_router(users.router)
 app.include_router(schedules.router)
 app.include_router(tasks.router)
@@ -50,6 +51,35 @@ def seed_owner():
             logger.info("Seeded owner account: margo@margocrm.ru")
     except Exception as e:
         logger.warning(f"Could not seed owner account: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
+@app.on_event("startup")
+def seed_categories():
+    from app.database import SessionLocal
+    from app.models.category import FinanceCategory
+
+    defaults = [
+        ("Хозяйство", "expense"),
+        ("Транспорт", "expense"),
+        ("Еда", "expense"),
+        ("Развлечения", "expense"),
+        ("Прочее", "expense"),
+    ]
+    db = SessionLocal()
+    try:
+        for name, cat_type in defaults:
+            exists = db.query(FinanceCategory).filter(
+                FinanceCategory.name == name, FinanceCategory.type == cat_type
+            ).first()
+            if not exists:
+                db.add(FinanceCategory(name=name, type=cat_type, is_default=True))
+        db.commit()
+        logger.info("Seeded default finance categories")
+    except Exception as e:
+        logger.warning(f"Could not seed categories: {e}")
         db.rollback()
     finally:
         db.close()
