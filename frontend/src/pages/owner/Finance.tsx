@@ -5,14 +5,9 @@ import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, C
 import { format, parseISO, addDays, differenceInDays, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
-} from "recharts";
-import {
   getPayroll, createPayroll, updatePayroll, deletePayroll, autoGeneratePayroll,
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense,
   getIncome, createIncome, updateIncome, deleteIncome,
-  getFinanceSummary,
   getCashAdvances, createCashAdvance, deleteCashAdvance, getCashAdvanceBalances,
 } from "../../api/finance";
 import { uploadFile } from "../../api/uploads";
@@ -29,7 +24,6 @@ import { Table, Td } from "../../components/ui/Table";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 const tabs = [
-  { id: "reports", label: "finance.reports" },
   { id: "income", label: "finance.income" },
   { id: "expenses", label: "finance.expenses" },
   { id: "payroll", label: "finance.payroll" },
@@ -38,12 +32,10 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
-const PIE_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#a855f7", "#6b7280"];
-
 export default function Finance() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabId>("reports");
+  const [activeTab, setActiveTab] = useState<TabId>("income");
 
   return (
     <div className="space-y-4">
@@ -72,7 +64,6 @@ export default function Finance() {
       {activeTab === "expenses" && <ExpensesTab t={t} queryClient={queryClient} />}
       {activeTab === "income" && <IncomeTab t={t} queryClient={queryClient} />}
       {activeTab === "advances" && <AdvancesTab t={t} queryClient={queryClient} />}
-      {activeTab === "reports" && <ReportsTab t={t} />}
     </div>
   );
 }
@@ -996,96 +987,6 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
           </div>
         </div>
       </Modal>
-    </div>
-  );
-}
-
-function ReportsTab({ t }: { t: (k: string) => string }) {
-  const { data: summary, isLoading } = useQuery({
-    queryKey: ["finance-summary"],
-    queryFn: () => getFinanceSummary(),
-  });
-
-  if (isLoading) return <LoadingSpinner />;
-  if (!summary) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
-
-  const pieData = (summary.expense_by_category || []).map((item) => ({
-    name: item.category,
-    value: item.amount,
-  }));
-
-  return (
-    <div className="space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="glass-card rounded-xl p-4">
-          <div className="text-sm text-gray-500">{t("finance.income")}</div>
-          <div className="text-2xl font-bold text-green-400 mt-1">
-            {formatMoney(summary.total_income)}
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="text-sm text-gray-500">{t("finance.expenses")}</div>
-          <div className="text-2xl font-bold text-red-400 mt-1">
-            {formatMoney(summary.total_expenses + summary.total_payroll)}
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="text-sm text-gray-500">{t("finance.balance")}</div>
-          <div className={`text-2xl font-bold mt-1 ${summary.balance >= 0 ? "text-green-400" : "text-red-400"}`}>
-            {formatMoney(summary.balance)}
-          </div>
-        </div>
-      </div>
-
-      {/* Monthly bar chart */}
-      {(summary.monthly || []).length > 0 && (
-        <div className="glass-card rounded-xl p-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-4">
-            {t("finance.monthlyChart")}
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={summary.monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value) => formatMoney(Number(value))} />
-              <Legend />
-              <Bar dataKey="income" name={t("finance.income")} fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expenses" name={t("finance.expenses")} fill="#ef4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="payroll" name={t("finance.payroll")} fill="#a855f7" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Expense pie chart */}
-      {pieData.length > 0 && (
-        <div className="glass-card rounded-xl p-4">
-          <h3 className="text-sm font-medium text-gray-300 mb-4">
-            {t("finance.expensesByCategory")}
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={2}
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-              >
-                {pieData.map((_, idx) => (
-                  <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatMoney(Number(value))} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      )}
     </div>
   );
 }
