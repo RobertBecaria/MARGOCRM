@@ -10,6 +10,7 @@ from app.middleware.rbac import require_role
 from app.models.finance import CashAdvance, Expense, Income, Payroll
 from app.models.user import RoleEnum, User
 from app.schemas.finance import (
+    AutoPayrollRequest,
     CashAdvanceBalance,
     CashAdvanceCreate,
     CashAdvanceResponse,
@@ -91,6 +92,34 @@ def delete_payroll(
 
     db.delete(payroll)
     db.commit()
+
+
+@router.post("/payroll/auto-generate", response_model=List[PayrollResponse], status_code=status.HTTP_201_CREATED)
+def auto_generate_payroll(
+    data: AutoPayrollRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner)),
+):
+    records = []
+    for entry in data.entries:
+        payroll = Payroll(
+            user_id=entry.user_id,
+            period_start=entry.period_start,
+            period_end=entry.period_end,
+            base_salary=entry.base_salary,
+            bonuses=entry.bonuses,
+            deductions=entry.deductions,
+            net_amount=entry.net_amount,
+            payment_source=entry.payment_source,
+        )
+        db.add(payroll)
+        records.append(payroll)
+
+    db.commit()
+    for r in records:
+        db.refresh(r)
+
+    return records
 
 
 # --- Expenses ---

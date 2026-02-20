@@ -77,6 +77,17 @@ export interface FinanceSummary {
   expense_by_category: Array<{ category: string; amount: number }>;
 }
 
+interface AutoPayrollEntry {
+  user_id: number;
+  period_start: string;
+  period_end: string;
+  base_salary: number;
+  bonuses: number;
+  deductions: number;
+  net_amount: number;
+  payment_source: string;
+}
+
 export async function getPayroll(params?: { user_id?: number }): Promise<Payroll[]> {
   const response = await client.get<Payroll[]>("/payroll", { params });
   return response.data;
@@ -94,6 +105,11 @@ export async function updatePayroll(id: number, data: PayrollUpdate): Promise<Pa
 
 export async function deletePayroll(id: number): Promise<void> {
   await client.delete(`/payroll/${id}`);
+}
+
+export async function autoGeneratePayroll(entries: AutoPayrollEntry[]): Promise<Payroll[]> {
+  const response = await client.post<Payroll[]>("/payroll/auto-generate", { entries });
+  return response.data;
 }
 
 export async function getExpenses(status?: string): Promise<Expense[]> {

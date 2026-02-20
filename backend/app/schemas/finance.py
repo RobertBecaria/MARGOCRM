@@ -172,3 +172,18 @@ class CashAdvanceBalance(BaseModel):
     total_advanced: float
     total_spent: float
     remaining: float
+
+
+class AutoPayrollEntry(BaseModel):
+    user_id: int
+    period_start: dt.date
+    period_end: dt.date
+    base_salary: float
+    bonuses: float = 0
+    deductions: float = 0
+    net_amount: float
+    payment_source: str = "cash"
+
+
+class AutoPayrollRequest(BaseModel):
+    entries: list[AutoPayrollEntry]

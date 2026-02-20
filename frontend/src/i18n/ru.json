@@ -137,7 +137,13 @@
     "spent": "Потрачено",
     "remaining": "Остаток",
     "advanceNote": "Заметка",
-    "noAdvances": "Нет авансов"
+    "noAdvances": "Нет авансов",
+    "autoPayroll": "Авто-зарплата",
+    "selectAll": "Выбрать всех",
+    "noHistory": "Нет истории",
+    "generatePayroll": "Создать",
+    "globalDates": "Общие даты для всех",
+    "lastPeriod": "Пред"
   },
   "ai": {
     "title": "Лия",

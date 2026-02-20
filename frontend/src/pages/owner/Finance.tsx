@@ -1,15 +1,15 @@
 import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check, Pencil, Trash2, X, Camera, Loader2 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw } from "lucide-react";
+import { format, parseISO, addDays, differenceInDays, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from "recharts";
 import {
-  getPayroll, createPayroll, updatePayroll, deletePayroll,
+  getPayroll, createPayroll, updatePayroll, deletePayroll, autoGeneratePayroll,
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense,
   getIncome, createIncome, updateIncome, deleteIncome,
   getFinanceSummary,
@@ -82,6 +82,11 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState({ user_id: "", period_start: "", period_end: "", base_salary: "", bonuses: "0", deductions: "0", payment_source: "cash" });
+  const [autoModalOpen, setAutoModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [useGlobalDates, setUseGlobalDates] = useState(false);
+  const [globalStart, setGlobalStart] = useState("");
+  const [globalEnd, setGlobalEnd] = useState("");
 
   const { data: records = [], isLoading } = useQuery({ queryKey: ["payroll"], queryFn: () => getPayroll() });
   const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
@@ -110,6 +115,91 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
     mutationFn: deletePayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setConfirmDeleteId(null); },
   });
+
+  const autoMut = useMutation({
+    mutationFn: autoGeneratePayroll,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setAutoModalOpen(false); },
+  });
+
+  const autoRows = useMemo(() => {
+    const latestByUser = new Map<number, (typeof records)[0]>();
+    for (const r of records) {
+      const existing = latestByUser.get(r.user_id);
+      if (!existing || r.period_end > existing.period_end) {
+        latestByUser.set(r.user_id, r);
+      }
+    }
+    return staffList.map((user) => {
+      const last = latestByUser.get(user.id);
+      let newStart: string;
+      let newEnd: string;
+      if (last) {
+        const ls = parseISO(last.period_start);
+        const le = parseISO(last.period_end);
+        const dur = differenceInDays(le, ls);
+        const ns = addDays(le, 1);
+        const ne = addDays(ns, dur);
+        newStart = format(ns, "yyyy-MM-dd");
+        newEnd = format(ne, "yyyy-MM-dd");
+      } else {
+        const nm = addMonths(new Date(), 1);
+        newStart = format(startOfMonth(nm), "yyyy-MM-dd");
+        newEnd = format(endOfMonth(nm), "yyyy-MM-dd");
+      }
+      return {
+        userId: user.id,
+        name: user.full_name,
+        hasHistory: !!last,
+        lastEnd: last ? format(parseISO(last.period_end), "d MMM", { locale: ru }) : null,
+        newStart,
+        newEnd,
+        baseSalary: last?.base_salary || 0,
+        bonuses: last?.bonuses || 0,
+        deductions: last?.deductions || 0,
+        netAmount: last?.net_amount || 0,
+        paymentSource: last?.payment_source || "cash",
+      };
+    });
+  }, [records, staffList]);
+
+  function openAutoModal() {
+    const withHistory = autoRows.filter((r) => r.hasHistory).map((r) => r.userId);
+    setSelectedIds(new Set(withHistory));
+    setUseGlobalDates(false);
+    setGlobalStart("");
+    setGlobalEnd("");
+    setAutoModalOpen(true);
+  }
+
+  function toggleUser(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    if (selectedIds.size === staffList.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(staffList.map((u) => u.id)));
+  }
+
+  function handleAutoGenerate() {
+    const entries = autoRows
+      .filter((r) => selectedIds.has(r.userId))
+      .map((r) => ({
+        user_id: r.userId,
+        period_start: useGlobalDates && globalStart ? globalStart : r.newStart,
+        period_end: useGlobalDates && globalEnd ? globalEnd : r.newEnd,
+        base_salary: r.baseSalary,
+        bonuses: r.bonuses,
+        deductions: r.deductions,
+        net_amount: r.baseSalary + r.bonuses - r.deductions,
+        payment_source: r.paymentSource,
+      }));
+    autoMut.mutate(entries);
+  }
 
   function closeModal() {
     setModalOpen(false);
@@ -160,9 +250,42 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
     return t("finance.sourceCash");
   };
 
+  const cashTotal = records.filter((r) => !r.payment_source || r.payment_source === "cash").reduce((s, r) => s + r.net_amount, 0);
+  const ipTotal = records.filter((r) => r.payment_source === "ip").reduce((s, r) => s + r.net_amount, 0);
+  const cardTotal = records.filter((r) => r.payment_source === "card").reduce((s, r) => s + r.net_amount, 0);
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      {/* Source stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
+            <div className="text-lg font-bold text-green-400">{formatMoney(cashTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
+            <div className="text-lg font-bold text-blue-400">{formatMoney(ipTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
+            <div className="text-lg font-bold text-purple-400">{formatMoney(cardTotal)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button variant="secondary" onClick={openAutoModal}>
+          <RefreshCw size={16} />
+          {t("finance.autoPayroll")}
+        </Button>
         <Button onClick={() => { closeModal(); setModalOpen(true); }}>
           <Plus size={16} />
           {t("finance.createRecord")}
@@ -268,6 +391,89 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
           </div>
         </div>
       </Modal>
+
+      {/* Auto payroll modal */}
+      <Modal open={autoModalOpen} onClose={() => setAutoModalOpen(false)} title={t("finance.autoPayroll")}>
+        <div className="space-y-4">
+          {/* Global dates override */}
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useGlobalDates}
+              onChange={() => setUseGlobalDates(!useGlobalDates)}
+              className="rounded border-white/20 bg-white/5 accent-blue-500"
+            />
+            <span className="text-sm text-gray-300">{t("finance.globalDates")}</span>
+          </label>
+          {useGlobalDates && (
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={t("finance.periodStart")} type="date" value={globalStart} onChange={(e) => setGlobalStart(e.target.value)} />
+              <Input label={t("finance.periodEnd")} type="date" value={globalEnd} onChange={(e) => setGlobalEnd(e.target.value)} />
+            </div>
+          )}
+
+          {/* Select all */}
+          <label className="flex items-center gap-2 cursor-pointer border-b border-white/[0.06] pb-3">
+            <input
+              type="checkbox"
+              checked={selectedIds.size === staffList.length && staffList.length > 0}
+              onChange={toggleAll}
+              className="rounded border-white/20 bg-white/5 accent-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-300">
+              {t("finance.selectAll")} ({selectedIds.size}/{staffList.length})
+            </span>
+          </label>
+
+          {/* Employee list */}
+          <div className="max-h-[400px] overflow-y-auto space-y-1">
+            {autoRows.map((row) => (
+              <label
+                key={row.userId}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  selectedIds.has(row.userId) ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(row.userId)}
+                  onChange={() => toggleUser(row.userId)}
+                  className="rounded border-white/20 bg-white/5 accent-blue-500"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-purple-200">{row.name}</div>
+                  {row.hasHistory ? (
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {t("finance.lastPeriod")}: ...{row.lastEnd} &middot; {formatMoney(row.netAmount)}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-600 mt-0.5">{t("finance.noHistory")}</div>
+                  )}
+                  {!useGlobalDates && (
+                    <div className="text-xs text-blue-400/70 mt-0.5">
+                      &rarr; {format(parseISO(row.newStart), "d MMM", { locale: ru })} &mdash; {format(parseISO(row.newEnd), "d MMM", { locale: ru })}
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm font-medium text-gray-400 whitespace-nowrap">
+                  {formatMoney(row.netAmount)}
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" onClick={() => setAutoModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={handleAutoGenerate}
+              loading={autoMut.isPending}
+              disabled={selectedIds.size === 0}
+            >
+              {t("finance.generatePayroll")} ({selectedIds.size})
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -345,8 +551,37 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
 
   if (isLoading) return <LoadingSpinner />;
 
+  const expCashTotal = expenses.filter((e) => !e.payment_source || e.payment_source === "cash").reduce((s, e) => s + e.amount, 0);
+  const expIpTotal = expenses.filter((e) => e.payment_source === "ip").reduce((s, e) => s + e.amount, 0);
+  const expCardTotal = expenses.filter((e) => e.payment_source === "card").reduce((s, e) => s + e.amount, 0);
+
   return (
     <div className="space-y-4">
+      {/* Source stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
+            <div className="text-lg font-bold text-green-400">{formatMoney(expCashTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
+            <div className="text-lg font-bold text-blue-400">{formatMoney(expIpTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
+            <div className="text-lg font-bold text-purple-400">{formatMoney(expCardTotal)}</div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           {["", "pending", "approved", "rejected"].map((s) => (
