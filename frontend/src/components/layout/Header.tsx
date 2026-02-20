@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Menu, Moon, Sun, LogOut } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
-import { useThemeStore } from "../../store/themeStore";
 import NotificationBell from "../shared/NotificationBell";
 
 const roleBadgeColors: Record<string, string> = {
@@ -14,16 +13,6 @@ const roleBadgeColors: Record<string, string> = {
   cleaner: "bg-pink-500/20 text-pink-300 border border-pink-500/30",
 };
 
-const roleBadgeColorsLight: Record<string, string> = {
-  owner: "bg-purple-100 text-purple-700 border border-purple-200",
-  manager: "bg-blue-100 text-blue-700 border border-blue-200",
-  staff: "bg-cyan-100 text-cyan-700 border border-cyan-200",
-  driver: "bg-green-100 text-green-700 border border-green-200",
-  chef: "bg-orange-100 text-orange-700 border border-orange-200",
-  assistant: "bg-cyan-100 text-cyan-700 border border-cyan-200",
-  cleaner: "bg-pink-100 text-pink-700 border border-pink-200",
-};
-
 interface HeaderProps {
   onMenuClick: () => void;
 }
@@ -31,9 +20,6 @@ interface HeaderProps {
 export default function Header({ onMenuClick }: HeaderProps) {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
-  const { dark, toggle } = useThemeStore();
-
-  const badgeColors = dark ? roleBadgeColors : roleBadgeColorsLight;
 
   return (
     <header className="h-14 flex items-center justify-between px-4 glass-header relative z-20">
@@ -54,7 +40,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </span>
             <span
               className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
-                badgeColors[user.role] || ""
+                roleBadgeColors[user.role] || ""
               }`}
             >
               {t(`roles.${user.role}`)}
@@ -63,14 +49,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
         )}
 
         <NotificationBell />
-
-        <button
-          onClick={toggle}
-          className="p-2 rounded-lg text-gray-400 hover:text-purple-200 hover:bg-white/10 transition-all"
-          title={dark ? t("settings.lightTheme") : t("settings.darkTheme")}
-        >
-          {dark ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
 
         <button
           onClick={logout}

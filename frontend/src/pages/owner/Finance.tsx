@@ -305,7 +305,14 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
       )}
 
       {/* Source stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.total")}</div>
+            <div className="text-lg font-bold text-white">{formatMoney(cashTotal + ipTotal + cardTotal)}</div>
+          </div>
+        </div>
         <div className="glass-card rounded-xl p-4 flex items-center gap-3">
           <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
           <div>
@@ -606,7 +613,14 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   return (
     <div className="space-y-4">
       {/* Source stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.total")}</div>
+            <div className="text-lg font-bold text-white">{formatMoney(expCashTotal + expIpTotal + expCardTotal)}</div>
+          </div>
+        </div>
         <div className="glass-card rounded-xl p-4 flex items-center gap-3">
           <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
           <div>
