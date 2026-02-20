@@ -243,15 +243,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
     }
   }
 
-  if (isLoading) return <LoadingSpinner />;
-
-  const sourceLabel = (src: string | null) => {
-    if (src === "ip") return t("finance.sourceIP");
-    if (src === "card") return t("finance.sourceCard");
-    return t("finance.sourceCash");
-  };
-
-  // Unique periods for filter
+  // Unique periods for filter (must be before early return - hooks order)
   const periods = useMemo(() => {
     const set = new Map<string, { start: string; end: string; label: string }>();
     for (const r of records) {
@@ -266,6 +258,14 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
     }
     return [...set.entries()].sort((a, b) => b[1].start.localeCompare(a[1].start));
   }, [records]);
+
+  if (isLoading) return <LoadingSpinner />;
+
+  const sourceLabel = (src: string | null) => {
+    if (src === "ip") return t("finance.sourceIP");
+    if (src === "card") return t("finance.sourceCard");
+    return t("finance.sourceCash");
+  };
 
   const filtered = periodFilter === "all" ? records : records.filter((r) => `${r.period_start}|${r.period_end}` === periodFilter);
 
