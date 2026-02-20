@@ -6,6 +6,7 @@ from app.models.ai import AiConversation, AiMessage
 from app.models.notification import Notification, NotificationType
 from app.models.timecard import TimeCard
 from app.models.category import FinanceCategory
+from app.models.note import Note, NoteColor
 
 __all__ = [
     "User", "RoleEnum",
@@ -16,4 +17,5 @@ __all__ = [
     "Notification", "NotificationType",
     "TimeCard",
     "FinanceCategory",
+    "Note", "NoteColor",
 ]
