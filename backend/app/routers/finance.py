@@ -55,6 +55,8 @@ def create_payroll(
     current_user: User = Depends(require_role(RoleEnum.owner)),
 ):
     payroll = Payroll(**data.dict())
+    # Recompute net_amount server-side to prevent client-side tampering
+    payroll.net_amount = payroll.base_salary + payroll.bonuses - payroll.deductions
     db.add(payroll)
     db.commit()
     db.refresh(payroll)
@@ -72,8 +74,13 @@ def update_payroll(
     if not payroll:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payroll record not found")
 
-    for field, value in data.dict(exclude_unset=True).items():
+    update_data = data.dict(exclude_unset=True)
+    for field, value in update_data.items():
         setattr(payroll, field, value)
+
+    # Recompute net_amount server-side if any salary component was updated
+    if any(k in update_data for k in ("base_salary", "bonuses", "deductions")):
+        payroll.net_amount = payroll.base_salary + payroll.bonuses - payroll.deductions
 
     db.commit()
     db.refresh(payroll)
@@ -102,6 +109,8 @@ def auto_generate_payroll(
 ):
     records = []
     for entry in data.entries:
+        # Recompute net_amount server-side to prevent client-side tampering
+        computed_net = entry.base_salary + entry.bonuses - entry.deductions
         payroll = Payroll(
             user_id=entry.user_id,
             period_start=entry.period_start,
@@ -109,7 +118,7 @@ def auto_generate_payroll(
             base_salary=entry.base_salary,
             bonuses=entry.bonuses,
             deductions=entry.deductions,
-            net_amount=entry.net_amount,
+            net_amount=computed_net,
             payment_source=entry.payment_source,
         )
         db.add(payroll)
@@ -135,6 +144,9 @@ def list_expenses(
     # Staff can only see their own expenses
     if current_user.role not in (RoleEnum.owner, RoleEnum.manager):
         query = query.filter(Expense.created_by == current_user.id)
+
+    if status_filter and status_filter not in ("pending", "approved", "rejected"):
+        raise HTTPException(status_code=400, detail="Invalid status filter")
 
     if status_filter:
         query = query.filter(Expense.status == status_filter)

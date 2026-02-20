@@ -12,7 +12,7 @@ import {
 } from "../../api/finance";
 import { uploadFile } from "../../api/uploads";
 import { getUsers } from "../../api/users";
-import type { PayrollStatus } from "../../types";
+import type { PayrollStatus, User } from "../../types";
 import { getCategories } from "../../api/categories";
 import { formatMoney } from "../../utils/formatters";
 import Button from "../../components/ui/Button";
@@ -23,6 +23,81 @@ import Badge from "../../components/ui/Badge";
 import { Table, Td } from "../../components/ui/Table";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
+/* ── Shared: SourceStats ─────────────────────────────────────────── */
+
+function SourceStats({ items, amountKey = "amount", t }: {
+  items: Array<{ payment_source?: string | null; [key: string]: any }>;
+  amountKey?: string;
+  t: (k: string) => string;
+}) {
+  let cashTotal = 0, ipTotal = 0, cardTotal = 0;
+  for (const item of items) {
+    const amt = Number(item[amountKey]) || 0;
+    const src = item.payment_source;
+    if (src === "ip") ipTotal += amt;
+    else if (src === "card") cardTotal += amt;
+    else cashTotal += amt;
+  }
+  const total = cashTotal + ipTotal + cardTotal;
+
+  return (
+    <div className="grid grid-cols-4 gap-3">
+      <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
+        <div>
+          <div className="text-xs text-gray-500">{t("finance.total")}</div>
+          <div className="text-lg font-bold text-white">{formatMoney(total)}</div>
+        </div>
+      </div>
+      <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
+        <div>
+          <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
+          <div className="text-lg font-bold text-green-400">{formatMoney(cashTotal)}</div>
+        </div>
+      </div>
+      <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
+        <div>
+          <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
+          <div className="text-lg font-bold text-blue-400">{formatMoney(ipTotal)}</div>
+        </div>
+      </div>
+      <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
+        <div>
+          <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
+          <div className="text-lg font-bold text-purple-400">{formatMoney(cardTotal)}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Shared: DeleteConfirmModal ──────────────────────────────────── */
+
+function DeleteConfirmModal({ open, onClose, onConfirm, isPending, t }: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isPending: boolean;
+  t: (k: string) => string;
+}) {
+  return (
+    <Modal open={open} onClose={onClose} title={t("finance.confirmDelete")}>
+      <div className="space-y-4">
+        <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
+        <div className="flex gap-3 justify-end">
+          <Button variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button onClick={onConfirm} loading={isPending}>{t("common.delete")}</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ── Tabs config ─────────────────────────────────────────────────── */
+
 const tabs = [
   { id: "income", label: "finance.income" },
   { id: "expenses", label: "finance.expenses" },
@@ -32,10 +107,15 @@ const tabs = [
 
 type TabId = (typeof tabs)[number]["id"];
 
+/* ── Finance (parent) ────────────────────────────────────────────── */
+
 export default function Finance() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabId>("income");
+
+  // Shared users query – passed down to PayrollTab & AdvancesTab
+  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
 
   return (
     <div className="space-y-4">
@@ -60,15 +140,17 @@ export default function Finance() {
         ))}
       </div>
 
-      {activeTab === "payroll" && <PayrollTab t={t} queryClient={queryClient} />}
+      {activeTab === "payroll" && <PayrollTab t={t} queryClient={queryClient} users={users} />}
       {activeTab === "expenses" && <ExpensesTab t={t} queryClient={queryClient} />}
       {activeTab === "income" && <IncomeTab t={t} queryClient={queryClient} />}
-      {activeTab === "advances" && <AdvancesTab t={t} queryClient={queryClient} />}
+      {activeTab === "advances" && <AdvancesTab t={t} queryClient={queryClient} users={users} />}
     </div>
   );
 }
 
-function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
+/* ── PayrollTab ──────────────────────────────────────────────────── */
+
+function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient>; users: User[] }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -81,18 +163,19 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
   const [periodFilter, setPeriodFilter] = useState("all");
 
   const { data: records = [], isLoading } = useQuery({ queryKey: ["payroll"], queryFn: () => getPayroll() });
-  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
-  const staffList = users.filter((u) => u.role !== "owner");
+  const staffList = useMemo(() => users.filter((u) => u.role !== "owner"), [users]);
   const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
   const createMut = useMutation({
     mutationFn: createPayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updatePayroll>[1] }) => updatePayroll(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const togglePaidMut = useMutation({
@@ -101,16 +184,19 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
         ? { status: "paid" as PayrollStatus, paid_date: format(new Date(), "yyyy-MM-dd") }
         : { status: "pending" as PayrollStatus, paid_date: undefined }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll"] }),
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deletePayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setConfirmDeleteId(null); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const autoMut = useMutation({
     mutationFn: autoGeneratePayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setAutoModalOpen(false); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const autoRows = useMemo(() => {
@@ -214,6 +300,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
   }
 
   function handleSubmit() {
+    if (!form.user_id || !form.period_start || !form.period_end || !form.base_salary) return;
     const base = Number(form.base_salary);
     const bon = Number(form.bonuses);
     const ded = Number(form.deductions);
@@ -260,10 +347,6 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
 
   const filtered = periodFilter === "all" ? records : records.filter((r) => `${r.period_start}|${r.period_end}` === periodFilter);
 
-  const cashTotal = filtered.filter((r) => !r.payment_source || r.payment_source === "cash").reduce((s, r) => s + r.net_amount, 0);
-  const ipTotal = filtered.filter((r) => r.payment_source === "ip").reduce((s, r) => s + r.net_amount, 0);
-  const cardTotal = filtered.filter((r) => r.payment_source === "card").reduce((s, r) => s + r.net_amount, 0);
-
   return (
     <div className="space-y-4">
       {/* Period filter */}
@@ -296,36 +379,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
       )}
 
       {/* Source stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.total")}</div>
-            <div className="text-lg font-bold text-white">{formatMoney(cashTotal + ipTotal + cardTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
-            <div className="text-lg font-bold text-green-400">{formatMoney(cashTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
-            <div className="text-lg font-bold text-blue-400">{formatMoney(ipTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
-            <div className="text-lg font-bold text-purple-400">{formatMoney(cardTotal)}</div>
-          </div>
-        </div>
-      </div>
+      <SourceStats items={filtered} amountKey="net_amount" t={t} />
 
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={openAutoModal}>
@@ -360,6 +414,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
                     <button
                       onClick={() => togglePaidMut.mutate({ id: r.id, paid: r.status !== "paid" })}
                       className="cursor-pointer"
+                      disabled={togglePaidMut.isPending}
                     >
                       <Badge color={r.status === "paid" ? "green" : "orange"}>
                         {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
@@ -426,17 +481,13 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
       </Modal>
 
       {/* Delete confirmation */}
-      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
-        <div className="space-y-4">
-          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
-          <div className="flex gap-3 justify-end">
-            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
-            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
-              {t("common.delete")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <DeleteConfirmModal
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
+        isPending={deleteMut.isPending}
+        t={t}
+      />
 
       {/* Auto payroll modal */}
       <Modal open={autoModalOpen} onClose={() => setAutoModalOpen(false)} title={t("finance.autoPayroll")}>
@@ -524,6 +575,8 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
   );
 }
 
+/* ── ExpensesTab ─────────────────────────────────────────────────── */
+
 function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
@@ -539,16 +592,19 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   const createMut = useMutation({
     mutationFn: createExpense,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateExpense>[1] }) => updateExpense(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteExpense,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const approveMut = useMutation({
@@ -557,6 +613,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
     },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   function closeModal() {
@@ -572,6 +629,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   }
 
   function handleSubmit() {
+    if (!form.category || !form.description || !form.amount || !form.date) return;
     const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined };
     if (editing) {
       updateMut.mutate({ id: editing, data: payload });
@@ -587,8 +645,8 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
     try {
       const result = await uploadFile(file);
       setForm((prev) => ({ ...prev, receipt_url: result.url }));
-    } catch {
-      // silently fail
+    } catch (err: any) {
+      window.alert(err?.response?.data?.detail || "Upload failed");
     } finally {
       setReceiptUploading(false);
       if (receiptInputRef.current) receiptInputRef.current.value = "";
@@ -597,43 +655,10 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
 
   if (isLoading) return <LoadingSpinner />;
 
-  const expCashTotal = expenses.filter((e) => !e.payment_source || e.payment_source === "cash").reduce((s, e) => s + e.amount, 0);
-  const expIpTotal = expenses.filter((e) => e.payment_source === "ip").reduce((s, e) => s + e.amount, 0);
-  const expCardTotal = expenses.filter((e) => e.payment_source === "card").reduce((s, e) => s + e.amount, 0);
-
   return (
     <div className="space-y-4">
       {/* Source stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.total")}</div>
-            <div className="text-lg font-bold text-white">{formatMoney(expCashTotal + expIpTotal + expCardTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
-            <div className="text-lg font-bold text-green-400">{formatMoney(expCashTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
-            <div className="text-lg font-bold text-blue-400">{formatMoney(expIpTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
-            <div className="text-lg font-bold text-purple-400">{formatMoney(expCardTotal)}</div>
-          </div>
-        </div>
-      </div>
+      <SourceStats items={expenses} t={t} />
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
@@ -764,20 +789,18 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       </Modal>
 
       {/* Delete confirmation */}
-      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
-        <div className="space-y-4">
-          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
-          <div className="flex gap-3 justify-end">
-            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
-            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
-              {t("common.delete")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <DeleteConfirmModal
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
+        isPending={deleteMut.isPending}
+        t={t}
+      />
     </div>
   );
 }
+
+/* ── IncomeTab ───────────────────────────────────────────────────── */
 
 function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -793,16 +816,19 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   const createMut = useMutation({
     mutationFn: createIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateIncome>[1] }) => updateIncome(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   function closeModal() {
@@ -818,6 +844,7 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   }
 
   function handleSubmit() {
+    if (!form.source || !form.description || !form.amount || !form.date || !form.category) return;
     const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined };
     if (editing) {
       updateMut.mutate({ id: editing, data: payload });
@@ -833,8 +860,8 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
     try {
       const result = await uploadFile(file);
       setForm((prev) => ({ ...prev, receipt_url: result.url }));
-    } catch {
-      // silently fail
+    } catch (err: any) {
+      window.alert(err?.response?.data?.detail || "Upload failed");
     } finally {
       setReceiptUploading(false);
       if (receiptInputRef.current) receiptInputRef.current.value = "";
@@ -843,43 +870,10 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
 
   if (isLoading) return <LoadingSpinner />;
 
-  const incCashTotal = incomeList.filter((i) => !i.payment_source || i.payment_source === "cash").reduce((s, i) => s + i.amount, 0);
-  const incIpTotal = incomeList.filter((i) => i.payment_source === "ip").reduce((s, i) => s + i.amount, 0);
-  const incCardTotal = incomeList.filter((i) => i.payment_source === "card").reduce((s, i) => s + i.amount, 0);
-
   return (
     <div className="space-y-4">
       {/* Source stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.total")}</div>
-            <div className="text-lg font-bold text-white">{formatMoney(incCashTotal + incIpTotal + incCardTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
-            <div className="text-lg font-bold text-green-400">{formatMoney(incCashTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
-            <div className="text-lg font-bold text-blue-400">{formatMoney(incIpTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
-            <div className="text-lg font-bold text-purple-400">{formatMoney(incCardTotal)}</div>
-          </div>
-        </div>
-      </div>
+      <SourceStats items={incomeList} t={t} />
 
       <div className="flex justify-end">
         <Button onClick={() => { closeModal(); setModalOpen(true); }}>
@@ -976,30 +970,27 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
       </Modal>
 
       {/* Delete confirmation */}
-      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
-        <div className="space-y-4">
-          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
-          <div className="flex gap-3 justify-end">
-            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
-            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
-              {t("common.delete")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <DeleteConfirmModal
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
+        isPending={deleteMut.isPending}
+        t={t}
+      />
     </div>
   );
 }
 
-function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
+/* ── AdvancesTab ─────────────────────────────────────────────────── */
+
+function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient>; users: User[] }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash" });
+  const [form, setForm] = useState(() => ({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash" }));
 
   const { data: advances = [], isLoading } = useQuery({ queryKey: ["cash-advances"], queryFn: getCashAdvances });
   const { data: balances = [] } = useQuery({ queryKey: ["cash-advance-balances"], queryFn: getCashAdvanceBalances });
-  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
-  const staffList = users.filter((u) => u.role !== "owner");
+  const staffList = useMemo(() => users.filter((u) => u.role !== "owner"), [users]);
   const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
 
   const createMut = useMutation({
@@ -1010,6 +1001,7 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       setModalOpen(false);
       setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash" });
     },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   const deleteMut = useMutation({
@@ -1019,47 +1011,15 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
       setConfirmDeleteId(null);
     },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
   if (isLoading) return <LoadingSpinner />;
 
-  const advCashTotal = advances.filter((a) => !a.payment_source || a.payment_source === "cash").reduce((s, a) => s + a.amount, 0);
-  const advIpTotal = advances.filter((a) => a.payment_source === "ip").reduce((s, a) => s + a.amount, 0);
-  const advCardTotal = advances.filter((a) => a.payment_source === "card").reduce((s, a) => s + a.amount, 0);
-
   return (
     <div className="space-y-6">
       {/* Source stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.total")}</div>
-            <div className="text-lg font-bold text-white">{formatMoney(advCashTotal + advIpTotal + advCardTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
-            <div className="text-lg font-bold text-green-400">{formatMoney(advCashTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
-            <div className="text-lg font-bold text-blue-400">{formatMoney(advIpTotal)}</div>
-          </div>
-        </div>
-        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
-          <div>
-            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
-            <div className="text-lg font-bold text-purple-400">{formatMoney(advCardTotal)}</div>
-          </div>
-        </div>
-      </div>
+      <SourceStats items={advances} t={t} />
 
       {/* Balance cards */}
       {balances.length > 0 && (
@@ -1109,7 +1069,7 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
                 <Td className="text-xs">
                   {a.payment_source === "ip" ? t("finance.sourceIP") : a.payment_source === "card" ? t("finance.sourceCard") : t("finance.sourceCash")}
                 </Td>
-                <Td className="text-sm text-gray-400">{a.note || "—"}</Td>
+                <Td className="text-sm text-gray-400">{a.note || "\u2014"}</Td>
                 <Td>{format(parseISO(a.date), "d MMM yyyy", { locale: ru })}</Td>
                 <Td>
                   <button
@@ -1160,17 +1120,13 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
         </div>
       </Modal>
 
-      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
-        <div className="space-y-4">
-          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
-          <div className="flex gap-3 justify-end">
-            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
-            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
-              {t("common.delete")}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <DeleteConfirmModal
+        open={confirmDeleteId !== null}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
+        isPending={deleteMut.isPending}
+        t={t}
+      />
     </div>
   );
 }
