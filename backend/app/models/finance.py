@@ -54,6 +54,7 @@ class Expense(Base):
     amount: Mapped[float] = mapped_column(Numeric(12, 2))
     date: Mapped[dt.date] = mapped_column(Date)
     receipt_url: Mapped[Optional[str]] = mapped_column(String(500))
+    payment_source: Mapped[Optional[str]] = mapped_column(String(20), default="cash")
     approved_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
@@ -74,3 +75,18 @@ class Income(Base):
     category: Mapped[str] = mapped_column(String(100))
     receipt_url: Mapped[Optional[str]] = mapped_column(String(500))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class CashAdvance(Base):
+    __tablename__ = "cash_advances"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    amount: Mapped[float] = mapped_column(Numeric(12, 2))
+    note: Mapped[Optional[str]] = mapped_column(String(500))
+    date: Mapped[dt.date] = mapped_column(Date)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
+
+    user = relationship("User", foreign_keys=[user_id])
+    creator = relationship("User", foreign_keys=[created_by])

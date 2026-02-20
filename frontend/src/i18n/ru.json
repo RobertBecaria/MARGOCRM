@@ -129,7 +129,15 @@
     "paymentSource": "Источник выплаты",
     "sourceCash": "Наличные",
     "sourceIP": "ИП",
-    "editPayroll": "Редактировать зарплату"
+    "sourceCard": "Карта",
+    "editPayroll": "Редактировать зарплату",
+    "advances": "Авансы",
+    "addAdvance": "Выдать аванс",
+    "advanced": "Выдано",
+    "spent": "Потрачено",
+    "remaining": "Остаток",
+    "advanceNote": "Заметка",
+    "noAdvances": "Нет авансов"
   },
   "ai": {
     "title": "Лия",

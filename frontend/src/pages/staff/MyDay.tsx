@@ -9,7 +9,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { getSchedules } from "../../api/schedules";
 import { getTasks, updateTask } from "../../api/tasks";
 import { getTodayStatus, clockIn, clockOut } from "../../api/timecard";
-import { getExpenses, createExpense } from "../../api/finance";
+import { getExpenses, createExpense, getCashAdvanceBalances } from "../../api/finance";
+import { formatMoney } from "../../utils/formatters";
 import { getCategories } from "../../api/categories";
 import { uploadFile } from "../../api/uploads";
 import type { TaskStatus } from "../../types";
@@ -65,7 +66,7 @@ export default function MyDay() {
 
   // Expense states
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ category: "", description: "", amount: "", date: today, receipt_url: "" });
+  const [expenseForm, setExpenseForm] = useState({ category: "", description: "", amount: "", date: today, receipt_url: "", payment_source: "cash" });
   const [receiptUploading, setReceiptUploading] = useState(false);
   const receiptInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,12 +81,20 @@ export default function MyDay() {
     queryFn: () => getCategories("expense"),
   });
 
+  const { data: advanceBalances = [] } = useQuery({
+    queryKey: ["cash-advance-balances"],
+    queryFn: getCashAdvanceBalances,
+    enabled: !!user,
+  });
+  const myBalance = advanceBalances.find((b) => b.user_id === user?.id);
+
   const createExpenseMut = useMutation({
     mutationFn: createExpense,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
       setExpenseModalOpen(false);
-      setExpenseForm({ category: "", description: "", amount: "", date: today, receipt_url: "" });
+      setExpenseForm({ category: "", description: "", amount: "", date: today, receipt_url: "", payment_source: "cash" });
     },
   });
 
@@ -262,6 +271,29 @@ export default function MyDay() {
         )}
       </div>
 
+      {/* Advance balance */}
+      {myBalance && myBalance.total_advanced > 0 && (
+        <div className="glass-card glow-border rounded-xl p-4">
+          <div className="text-sm font-medium text-purple-200 mb-2">{t("finance.advances")}</div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div>
+              <div className="text-xs text-gray-500">{t("finance.advanced")}</div>
+              <div className="text-sm font-bold text-blue-400">{formatMoney(myBalance.total_advanced)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">{t("finance.spent")}</div>
+              <div className="text-sm font-bold text-green-400">{formatMoney(myBalance.total_spent)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">{t("finance.remaining")}</div>
+              <div className={`text-sm font-bold ${myBalance.remaining > 0 ? "text-orange-400" : "text-green-400"}`}>
+                {formatMoney(myBalance.remaining)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* My Expenses */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -317,6 +349,16 @@ export default function MyDay() {
           <Input label={t("common.description")} value={expenseForm.description} onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} />
           <Input label={t("common.date")} type="date" value={expenseForm.date} onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })} />
+          <Select
+            label={t("finance.paymentSource")}
+            options={[
+              { value: "cash", label: t("finance.sourceCash") },
+              { value: "card", label: t("finance.sourceCard") },
+              { value: "ip", label: t("finance.sourceIP") },
+            ]}
+            value={expenseForm.payment_source}
+            onChange={(e) => setExpenseForm({ ...expenseForm, payment_source: e.target.value })}
+          />
 
           {/* Receipt upload */}
           <div>
@@ -347,6 +389,7 @@ export default function MyDay() {
                 amount: Number(expenseForm.amount),
                 date: expenseForm.date,
                 receipt_url: expenseForm.receipt_url || undefined,
+                payment_source: expenseForm.payment_source,
               })}
               loading={createExpenseMut.isPending}
               disabled={!expenseForm.category || !expenseForm.description || !expenseForm.amount}

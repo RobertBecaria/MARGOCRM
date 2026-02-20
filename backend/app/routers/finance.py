@@ -7,9 +7,12 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
 from app.middleware.rbac import require_role
-from app.models.finance import Expense, Income, Payroll
+from app.models.finance import CashAdvance, Expense, Income, Payroll
 from app.models.user import RoleEnum, User
 from app.schemas.finance import (
+    CashAdvanceBalance,
+    CashAdvanceCreate,
+    CashAdvanceResponse,
     CategorySummary,
     ExpenseApproval,
     ExpenseCreate,
@@ -237,6 +240,96 @@ def delete_income(
 
     db.delete(income)
     db.commit()
+
+
+# --- Cash Advances ---
+
+@router.get("/cash-advances", response_model=List[CashAdvanceResponse])
+def list_cash_advances(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(CashAdvance).options(joinedload(CashAdvance.user))
+
+    if current_user.role not in (RoleEnum.owner, RoleEnum.manager):
+        query = query.filter(CashAdvance.user_id == current_user.id)
+
+    return query.order_by(CashAdvance.date.desc()).all()
+
+
+@router.post("/cash-advances", response_model=CashAdvanceResponse, status_code=status.HTTP_201_CREATED)
+def create_cash_advance(
+    data: CashAdvanceCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    advance = CashAdvance(**data.dict(), created_by=current_user.id)
+    db.add(advance)
+    db.commit()
+    db.refresh(advance)
+    return advance
+
+
+@router.delete("/cash-advances/{advance_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_cash_advance(
+    advance_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner)),
+):
+    advance = db.query(CashAdvance).filter(CashAdvance.id == advance_id).first()
+    if not advance:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cash advance not found")
+
+    db.delete(advance)
+    db.commit()
+
+
+@router.get("/cash-advances/balance", response_model=List[CashAdvanceBalance])
+def cash_advance_balances(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Get total advances per user
+    advances_q = (
+        db.query(CashAdvance.user_id, func.coalesce(func.sum(CashAdvance.amount), 0))
+        .group_by(CashAdvance.user_id)
+    )
+
+    if current_user.role not in (RoleEnum.owner, RoleEnum.manager):
+        advances_q = advances_q.filter(CashAdvance.user_id == current_user.id)
+
+    advances_map = {uid: float(amt) for uid, amt in advances_q.all()}
+
+    if not advances_map:
+        return []
+
+    # Get total approved expenses per user (only those who have advances)
+    expenses_q = (
+        db.query(Expense.created_by, func.coalesce(func.sum(Expense.amount), 0))
+        .filter(Expense.status == "approved", Expense.created_by.in_(advances_map.keys()))
+        .group_by(Expense.created_by)
+        .all()
+    )
+    expenses_map = {uid: float(amt) for uid, amt in expenses_q}
+
+    # Build response
+    user_ids = list(advances_map.keys())
+    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    user_names = {u.id: u.full_name for u in users}
+
+    result = []
+    for uid in user_ids:
+        advanced = advances_map.get(uid, 0)
+        spent = expenses_map.get(uid, 0)
+        result.append(CashAdvanceBalance(
+            user_id=uid,
+            full_name=user_names.get(uid, f"ID {uid}"),
+            total_advanced=advanced,
+            total_spent=spent,
+            remaining=advanced - spent,
+        ))
+
+    return result
 
 
 # --- Summary ---

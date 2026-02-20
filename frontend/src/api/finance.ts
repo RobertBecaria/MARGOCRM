@@ -1,5 +1,5 @@
 import client from "./client";
-import type { Payroll, Expense, Income, PayrollStatus } from "../types";
+import type { Payroll, Expense, Income, CashAdvance, CashAdvanceBalance, PayrollStatus } from "../types";
 
 interface PayrollCreate {
   user_id: number;
@@ -31,6 +31,7 @@ interface ExpenseCreate {
   amount: number;
   date: string;
   receipt_url?: string;
+  payment_source?: string;
 }
 
 interface ExpenseUpdate {
@@ -39,6 +40,14 @@ interface ExpenseUpdate {
   amount?: number;
   date?: string;
   receipt_url?: string;
+  payment_source?: string;
+}
+
+interface CashAdvanceCreate {
+  user_id: number;
+  amount: number;
+  note?: string;
+  date: string;
 }
 
 interface IncomeCreate {
@@ -133,5 +142,24 @@ export async function deleteIncome(id: number): Promise<void> {
 
 export async function getFinanceSummary(): Promise<FinanceSummary> {
   const response = await client.get<FinanceSummary>("/finance/summary");
+  return response.data;
+}
+
+export async function getCashAdvances(): Promise<CashAdvance[]> {
+  const response = await client.get<CashAdvance[]>("/cash-advances");
+  return response.data;
+}
+
+export async function createCashAdvance(data: CashAdvanceCreate): Promise<CashAdvance> {
+  const response = await client.post<CashAdvance>("/cash-advances", data);
+  return response.data;
+}
+
+export async function deleteCashAdvance(id: number): Promise<void> {
+  await client.delete(`/cash-advances/${id}`);
+}
+
+export async function getCashAdvanceBalances(): Promise<CashAdvanceBalance[]> {
+  const response = await client.get<CashAdvanceBalance[]>("/cash-advances/balance");
   return response.data;
 }

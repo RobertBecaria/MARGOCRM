@@ -55,6 +55,7 @@ class ExpenseCreate(BaseModel):
     amount: float
     date: dt.date
     receipt_url: Optional[str] = None
+    payment_source: str = "cash"
 
 
 class ExpenseResponse(BaseModel):
@@ -64,6 +65,7 @@ class ExpenseResponse(BaseModel):
     amount: float
     date: dt.date
     receipt_url: Optional[str] = None
+    payment_source: Optional[str] = "cash"
     approved_by: Optional[int] = None
     created_by: int
     created_at: dt.datetime
@@ -102,6 +104,7 @@ class ExpenseUpdate(BaseModel):
     amount: Optional[float] = None
     date: Optional[dt.date] = None
     receipt_url: Optional[str] = None
+    payment_source: Optional[str] = None
     status: Optional[str] = None
 
 
@@ -140,3 +143,32 @@ class FinanceSummary(BaseModel):
     period_end: dt.date
     monthly: list[MonthlySummary] = []
     expense_by_category: list[CategorySummary] = []
+
+
+class CashAdvanceCreate(BaseModel):
+    user_id: int
+    amount: float
+    note: Optional[str] = None
+    date: dt.date
+
+
+class CashAdvanceResponse(BaseModel):
+    id: int
+    user_id: int
+    user: Optional[UserResponse] = None
+    amount: float
+    note: Optional[str] = None
+    date: dt.date
+    created_by: int
+    created_at: dt.datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CashAdvanceBalance(BaseModel):
+    user_id: int
+    full_name: str
+    total_advanced: float
+    total_spent: float
+    remaining: float

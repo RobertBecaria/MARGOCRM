@@ -13,6 +13,7 @@ import {
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense,
   getIncome, createIncome, updateIncome, deleteIncome,
   getFinanceSummary,
+  getCashAdvances, createCashAdvance, deleteCashAdvance, getCashAdvanceBalances,
 } from "../../api/finance";
 import { uploadFile } from "../../api/uploads";
 import { getUsers } from "../../api/users";
@@ -32,6 +33,7 @@ const tabs = [
   { id: "income", label: "finance.income" },
   { id: "expenses", label: "finance.expenses" },
   { id: "payroll", label: "finance.payroll" },
+  { id: "advances", label: "finance.advances" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -69,6 +71,7 @@ export default function Finance() {
       {activeTab === "payroll" && <PayrollTab t={t} queryClient={queryClient} />}
       {activeTab === "expenses" && <ExpensesTab t={t} queryClient={queryClient} />}
       {activeTab === "income" && <IncomeTab t={t} queryClient={queryClient} />}
+      {activeTab === "advances" && <AdvancesTab t={t} queryClient={queryClient} />}
       {activeTab === "reports" && <ReportsTab t={t} />}
     </div>
   );
@@ -95,8 +98,11 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
   });
 
-  const markPaidMut = useMutation({
-    mutationFn: (id: number) => updatePayroll(id, { status: "paid" as PayrollStatus, paid_date: format(new Date(), "yyyy-MM-dd") }),
+  const togglePaidMut = useMutation({
+    mutationFn: ({ id, paid }: { id: number; paid: boolean }) =>
+      updatePayroll(id, paid
+        ? { status: "paid" as PayrollStatus, paid_date: format(new Date(), "yyyy-MM-dd") }
+        : { status: "pending" as PayrollStatus, paid_date: undefined }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll"] }),
   });
 
@@ -148,7 +154,11 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
 
   if (isLoading) return <LoadingSpinner />;
 
-  const sourceLabel = (src: string | null) => src === "ip" ? t("finance.sourceIP") : t("finance.sourceCash");
+  const sourceLabel = (src: string | null) => {
+    if (src === "ip") return t("finance.sourceIP");
+    if (src === "card") return t("finance.sourceCard");
+    return t("finance.sourceCash");
+  };
 
   return (
     <div className="space-y-4">
@@ -178,9 +188,14 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
                   <Td className="font-medium">{formatMoney(r.net_amount)}</Td>
                   <Td className="text-xs">{sourceLabel(r.payment_source)}</Td>
                   <Td>
-                    <Badge color={r.status === "paid" ? "green" : "orange"}>
-                      {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
-                    </Badge>
+                    <button
+                      onClick={() => togglePaidMut.mutate({ id: r.id, paid: r.status !== "paid" })}
+                      className="cursor-pointer"
+                    >
+                      <Badge color={r.status === "paid" ? "green" : "orange"}>
+                        {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
+                      </Badge>
+                    </button>
                   </Td>
                   <Td>
                     <div className="flex gap-1">
@@ -191,15 +206,6 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
                       >
                         <Pencil size={15} />
                       </button>
-                      {r.status === "pending" && (
-                        <button
-                          onClick={() => markPaidMut.mutate(r.id)}
-                          className="p-1.5 rounded-md text-gray-400 hover:text-green-400 hover:bg-white/10"
-                          title={t("finance.paid")}
-                        >
-                          <Check size={15} />
-                        </button>
-                      )}
                       <button
                         onClick={() => setConfirmDeleteId(r.id)}
                         className="p-1.5 rounded-md text-gray-400 hover:text-red-400 hover:bg-white/10"
@@ -237,6 +243,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
             label={t("finance.paymentSource")}
             options={[
               { value: "cash", label: t("finance.sourceCash") },
+              { value: "card", label: t("finance.sourceCard") },
               { value: "ip", label: t("finance.sourceIP") },
             ]}
             value={form.payment_source}
@@ -270,7 +277,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
-  const [form, setForm] = useState({ category: "", description: "", amount: "", date: "", receipt_url: "" });
+  const [form, setForm] = useState({ category: "", description: "", amount: "", date: "", receipt_url: "", payment_source: "cash" });
   const [receiptUploading, setReceiptUploading] = useState(false);
   const receiptInputRef = useRef<HTMLInputElement>(null);
 
@@ -303,12 +310,12 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   function closeModal() {
     setModalOpen(false);
     setEditing(null);
-    setForm({ category: "", description: "", amount: "", date: "", receipt_url: "" });
+    setForm({ category: "", description: "", amount: "", date: "", receipt_url: "", payment_source: "cash" });
   }
 
   function openEdit(e: typeof expenses[0]) {
     setEditing(e.id);
-    setForm({ category: e.category, description: e.description, amount: String(e.amount), date: e.date, receipt_url: e.receipt_url || "" });
+    setForm({ category: e.category, description: e.description, amount: String(e.amount), date: e.date, receipt_url: e.receipt_url || "", payment_source: e.payment_source || "cash" });
     setModalOpen(true);
   }
 
@@ -430,6 +437,16 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
           <Input label={t("common.description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <Select
+            label={t("finance.paymentSource")}
+            options={[
+              { value: "cash", label: t("finance.sourceCash") },
+              { value: "card", label: t("finance.sourceCard") },
+              { value: "ip", label: t("finance.sourceIP") },
+            ]}
+            value={form.payment_source}
+            onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
+          />
 
           {/* Receipt upload */}
           <div>
@@ -723,6 +740,141 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
           </ResponsiveContainer>
         </div>
       )}
+    </div>
+  );
+}
+
+function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [form, setForm] = useState({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd") });
+
+  const { data: advances = [], isLoading } = useQuery({ queryKey: ["cash-advances"], queryFn: getCashAdvances });
+  const { data: balances = [] } = useQuery({ queryKey: ["cash-advance-balances"], queryFn: getCashAdvanceBalances });
+  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
+  const staffList = users.filter((u) => u.role !== "owner");
+  const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
+
+  const createMut = useMutation({
+    mutationFn: createCashAdvance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cash-advances"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
+      setModalOpen(false);
+      setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd") });
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: deleteCashAdvance,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cash-advances"] });
+      queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
+      setConfirmDeleteId(null);
+    },
+  });
+
+  if (isLoading) return <LoadingSpinner />;
+
+  return (
+    <div className="space-y-6">
+      {/* Balance cards */}
+      {balances.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {balances.map((b) => (
+            <div key={b.user_id} className="glass-card rounded-xl p-4">
+              <div className="text-sm font-medium text-purple-200 mb-3">{b.full_name}</div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">{t("finance.advanced")}</span>
+                  <span className="text-blue-400">{formatMoney(b.total_advanced)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">{t("finance.spent")}</span>
+                  <span className="text-green-400">{formatMoney(b.total_spent)}</span>
+                </div>
+                <div className="border-t border-white/[0.06] pt-1.5 flex justify-between text-sm">
+                  <span className="text-gray-400 font-medium">{t("finance.remaining")}</span>
+                  <span className={`font-bold ${b.remaining > 0 ? "text-orange-400" : "text-green-400"}`}>
+                    {formatMoney(b.remaining)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Advance records */}
+      <div className="flex justify-end">
+        <Button onClick={() => setModalOpen(true)}>
+          <Plus size={16} />
+          {t("finance.addAdvance")}
+        </Button>
+      </div>
+
+      {advances.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">{t("finance.noAdvances")}</div>
+      ) : (
+        <Table headers={[t("staff.employee"), t("finance.amount"), t("finance.advanceNote"), t("common.date"), ""]}>
+          {advances.map((a) => {
+            const user = userById.get(a.user_id);
+            return (
+              <tr key={a.id}>
+                <Td className="font-medium">{user?.full_name || `ID ${a.user_id}`}</Td>
+                <Td className="font-medium text-blue-400">{formatMoney(a.amount)}</Td>
+                <Td className="text-sm text-gray-400">{a.note || "—"}</Td>
+                <Td>{format(parseISO(a.date), "d MMM yyyy", { locale: ru })}</Td>
+                <Td>
+                  <button
+                    onClick={() => setConfirmDeleteId(a.id)}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-red-400 hover:bg-white/10"
+                    title={t("common.delete")}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </Td>
+              </tr>
+            );
+          })}
+        </Table>
+      )}
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t("finance.addAdvance")}>
+        <div className="space-y-4">
+          <Select
+            label={t("staff.employee")}
+            options={[{ value: "", label: t("finance.select") }, ...staffList.map((u) => ({ value: String(u.id), label: u.full_name }))]}
+            value={form.user_id}
+            onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+          />
+          <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+          <Input label={t("finance.advanceNote")} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={() => createMut.mutate({ user_id: Number(form.user_id), amount: Number(form.amount), note: form.note || undefined, date: form.date })}
+              loading={createMut.isPending}
+              disabled={!form.user_id || !form.amount}
+            >
+              {t("common.save")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
+          <div className="flex gap-3 justify-end">
+            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
+            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
+              {t("common.delete")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

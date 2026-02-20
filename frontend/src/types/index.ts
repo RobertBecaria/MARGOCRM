@@ -74,9 +74,29 @@ export interface Expense {
   amount: number;
   date: string;
   receipt_url: string | null;
+  payment_source: string | null;
   approved_by: number | null;
   created_by: number;
   status: string;
+}
+
+export interface CashAdvance {
+  id: number;
+  user_id: number;
+  user?: User;
+  amount: number;
+  note: string | null;
+  date: string;
+  created_by: number;
+  created_at: string;
+}
+
+export interface CashAdvanceBalance {
+  user_id: number;
+  full_name: string;
+  total_advanced: number;
+  total_spent: number;
+  remaining: number;
 }
 
 export interface Income {
