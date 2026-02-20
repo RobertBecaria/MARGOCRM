@@ -87,6 +87,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
   const [useGlobalDates, setUseGlobalDates] = useState(false);
   const [globalStart, setGlobalStart] = useState("");
   const [globalEnd, setGlobalEnd] = useState("");
+  const [periodFilter, setPeriodFilter] = useState("all");
 
   const { data: records = [], isLoading } = useQuery({ queryKey: ["payroll"], queryFn: () => getPayroll() });
   const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
@@ -250,12 +251,59 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
     return t("finance.sourceCash");
   };
 
-  const cashTotal = records.filter((r) => !r.payment_source || r.payment_source === "cash").reduce((s, r) => s + r.net_amount, 0);
-  const ipTotal = records.filter((r) => r.payment_source === "ip").reduce((s, r) => s + r.net_amount, 0);
-  const cardTotal = records.filter((r) => r.payment_source === "card").reduce((s, r) => s + r.net_amount, 0);
+  // Unique periods for filter
+  const periods = useMemo(() => {
+    const set = new Map<string, { start: string; end: string; label: string }>();
+    for (const r of records) {
+      const key = `${r.period_start}|${r.period_end}`;
+      if (!set.has(key)) {
+        set.set(key, {
+          start: r.period_start,
+          end: r.period_end,
+          label: `${format(parseISO(r.period_start), "d MMM", { locale: ru })} — ${format(parseISO(r.period_end), "d MMM", { locale: ru })}`,
+        });
+      }
+    }
+    return [...set.entries()].sort((a, b) => b[1].start.localeCompare(a[1].start));
+  }, [records]);
+
+  const filtered = periodFilter === "all" ? records : records.filter((r) => `${r.period_start}|${r.period_end}` === periodFilter);
+
+  const cashTotal = filtered.filter((r) => !r.payment_source || r.payment_source === "cash").reduce((s, r) => s + r.net_amount, 0);
+  const ipTotal = filtered.filter((r) => r.payment_source === "ip").reduce((s, r) => s + r.net_amount, 0);
+  const cardTotal = filtered.filter((r) => r.payment_source === "card").reduce((s, r) => s + r.net_amount, 0);
 
   return (
     <div className="space-y-4">
+      {/* Period filter */}
+      {periods.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setPeriodFilter("all")}
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+              periodFilter === "all"
+                ? "bg-blue-500/15 text-blue-400 font-medium"
+                : "text-gray-500 hover:bg-white/10"
+            }`}
+          >
+            {t("notifications.all")}
+          </button>
+          {periods.map(([key, p]) => (
+            <button
+              key={key}
+              onClick={() => setPeriodFilter(key)}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+                periodFilter === key
+                  ? "bg-blue-500/15 text-blue-400 font-medium"
+                  : "text-gray-500 hover:bg-white/10"
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Source stats */}
       <div className="grid grid-cols-3 gap-3">
         <div className="glass-card rounded-xl p-4 flex items-center gap-3">
@@ -292,12 +340,12 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
         </Button>
       </div>
 
-      {records.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
         <div className="overflow-x-auto">
           <Table headers={[t("staff.employee"), t("finance.period"), t("finance.baseSalary"), t("finance.bonuses"), t("finance.deductions"), t("finance.total"), t("finance.paymentSource"), t("staff.status"), ""]}>
-            {records.map((r) => {
+            {filtered.map((r) => {
               const user = userById.get(r.user_id);
               return (
                 <tr key={r.id}>
