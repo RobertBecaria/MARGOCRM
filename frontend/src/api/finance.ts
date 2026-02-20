@@ -59,6 +59,7 @@ interface IncomeCreate {
   category: string;
   receipt_url?: string;
   payment_source?: string;
+  is_recurring?: boolean;
 }
 
 interface IncomeUpdate {
@@ -69,6 +70,7 @@ interface IncomeUpdate {
   category?: string;
   receipt_url?: string;
   payment_source?: string;
+  is_recurring?: boolean;
 }
 
 export interface FinanceSummary {
@@ -157,6 +159,21 @@ export async function updateIncome(id: number, data: IncomeUpdate): Promise<Inco
 
 export async function deleteIncome(id: number): Promise<void> {
   await client.delete(`/income/${id}`);
+}
+
+interface AutoIncomeEntry {
+  source: string;
+  description: string;
+  amount: number;
+  date: string;
+  category: string;
+  payment_source: string;
+  is_recurring: boolean;
+}
+
+export async function autoGenerateIncome(entries: AutoIncomeEntry[]): Promise<Income[]> {
+  const response = await client.post<Income[]>("/income/auto-generate", { entries });
+  return response.data;
 }
 
 export async function getFinanceSummary(): Promise<FinanceSummary> {

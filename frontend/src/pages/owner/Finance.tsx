@@ -7,7 +7,7 @@ import { ru } from "date-fns/locale";
 import {
   getPayroll, createPayroll, updatePayroll, deletePayroll, autoGeneratePayroll,
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense,
-  getIncome, createIncome, updateIncome, deleteIncome,
+  getIncome, createIncome, updateIncome, deleteIncome, autoGenerateIncome,
   getCashAdvances, createCashAdvance, deleteCashAdvance, getCashAdvanceBalances,
 } from "../../api/finance";
 import { uploadFile } from "../../api/uploads";
@@ -806,9 +806,11 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "", payment_source: "cash" });
+  const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "", payment_source: "cash", is_recurring: false });
   const [receiptUploading, setReceiptUploading] = useState(false);
   const receiptInputRef = useRef<HTMLInputElement>(null);
+  const [autoModalOpen, setAutoModalOpen] = useState(false);
+  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
 
   const { data: incomeList = [], isLoading } = useQuery({ queryKey: ["income"], queryFn: getIncome });
   const { data: categories = [] } = useQuery({ queryKey: ["categories", "income"], queryFn: () => getCategories("income") });
@@ -831,21 +833,81 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
     onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
 
+  const autoMut = useMutation({
+    mutationFn: autoGenerateIncome,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); setAutoModalOpen(false); },
+    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+  });
+
+  const recurringRows = useMemo(() => {
+    const latestBySource = new Map<string, (typeof incomeList)[0]>();
+    for (const inc of incomeList) {
+      if (!inc.is_recurring) continue;
+      const existing = latestBySource.get(inc.source);
+      if (!existing || inc.date > existing.date) {
+        latestBySource.set(inc.source, inc);
+      }
+    }
+    return [...latestBySource.values()].map((inc) => {
+      const lastDate = parseISO(inc.date);
+      const nextDate = addMonths(lastDate, 1);
+      return {
+        source: inc.source,
+        description: inc.description,
+        amount: inc.amount,
+        category: inc.category,
+        payment_source: inc.payment_source || "cash",
+        lastDate: format(lastDate, "d MMM", { locale: ru }),
+        nextDate: format(nextDate, "yyyy-MM-dd"),
+        nextDateLabel: format(nextDate, "d MMM", { locale: ru }),
+      };
+    });
+  }, [incomeList]);
+
+  function openAutoModal() {
+    setSelectedSources(new Set(recurringRows.map((r) => r.source)));
+    setAutoModalOpen(true);
+  }
+
+  function toggleSource(source: string) {
+    setSelectedSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(source)) next.delete(source);
+      else next.add(source);
+      return next;
+    });
+  }
+
+  function handleAutoGenerate() {
+    const entries = recurringRows
+      .filter((r) => selectedSources.has(r.source))
+      .map((r) => ({
+        source: r.source,
+        description: r.description,
+        amount: r.amount,
+        date: r.nextDate,
+        category: r.category,
+        payment_source: r.payment_source,
+        is_recurring: true,
+      }));
+    autoMut.mutate(entries);
+  }
+
   function closeModal() {
     setModalOpen(false);
     setEditing(null);
-    setForm({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "", payment_source: "cash" });
+    setForm({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "", payment_source: "cash", is_recurring: false });
   }
 
   function openEdit(i: typeof incomeList[0]) {
     setEditing(i.id);
-    setForm({ source: i.source, description: i.description, amount: String(i.amount), date: i.date, category: i.category, receipt_url: i.receipt_url || "", payment_source: i.payment_source || "cash" });
+    setForm({ source: i.source, description: i.description, amount: String(i.amount), date: i.date, category: i.category, receipt_url: i.receipt_url || "", payment_source: i.payment_source || "cash", is_recurring: i.is_recurring });
     setModalOpen(true);
   }
 
   function handleSubmit() {
     if (!form.source || !form.description || !form.amount || !form.date || !form.category) return;
-    const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined };
+    const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined, is_recurring: form.is_recurring };
     if (editing) {
       updateMut.mutate({ id: editing, data: payload });
     } else {
@@ -875,7 +937,13 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
       {/* Source stats */}
       <SourceStats items={incomeList} t={t} />
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {recurringRows.length > 0 && (
+          <Button variant="secondary" onClick={openAutoModal}>
+            <RefreshCw size={16} />
+            {t("finance.generateRecurring")}
+          </Button>
+        )}
         <Button onClick={() => { closeModal(); setModalOpen(true); }}>
           <Plus size={16} />
           {t("finance.addIncome")}
@@ -888,7 +956,12 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
         <Table headers={[t("finance.source"), t("common.description"), t("finance.amount"), t("finance.paymentSource"), t("common.date"), ""]}>
           {incomeList.map((i) => (
             <tr key={i.id}>
-              <Td className="font-medium">{i.source}</Td>
+              <Td className="font-medium">
+                <div className="flex items-center gap-1.5">
+                  {i.source}
+                  {i.is_recurring && <RefreshCw size={13} className="text-blue-400" />}
+                </div>
+              </Td>
               <Td>
                 <div>
                   {i.description}
@@ -942,6 +1015,16 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
             onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
           />
 
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.is_recurring}
+              onChange={() => setForm((prev) => ({ ...prev, is_recurring: !prev.is_recurring }))}
+              className="rounded border-white/20 bg-white/5 accent-blue-500"
+            />
+            <span className="text-sm text-gray-300">{t("finance.recurring")}</span>
+          </label>
+
           {/* Receipt upload */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">{t("expenses.receipt")}</label>
@@ -977,6 +1060,54 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
         isPending={deleteMut.isPending}
         t={t}
       />
+
+      {/* Auto-generate recurring income modal */}
+      <Modal open={autoModalOpen} onClose={() => setAutoModalOpen(false)} title={t("finance.generateRecurring")}>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-400">{t("finance.recurringDescription")}</p>
+
+          <div className="space-y-1">
+            {recurringRows.map((row) => (
+              <label
+                key={row.source}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  selectedSources.has(row.source) ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedSources.has(row.source)}
+                  onChange={() => toggleSource(row.source)}
+                  className="rounded border-white/20 bg-white/5 accent-blue-500"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-purple-200">{row.source}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {row.description} &middot; {row.category}
+                  </div>
+                  <div className="text-xs text-blue-400/70 mt-0.5">
+                    &rarr; {row.nextDateLabel}
+                  </div>
+                </div>
+                <div className="text-sm font-medium text-gray-400 whitespace-nowrap">
+                  {formatMoney(row.amount)}
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <div className="flex gap-3 justify-end pt-2">
+            <Button variant="secondary" onClick={() => setAutoModalOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              onClick={handleAutoGenerate}
+              loading={autoMut.isPending}
+              disabled={selectedSources.size === 0}
+            >
+              {t("finance.generateRecurring")} ({selectedSources.size})
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -143,7 +143,10 @@
     "noHistory": "Нет истории",
     "generatePayroll": "Создать",
     "globalDates": "Общие даты для всех",
-    "lastPeriod": "Пред"
+    "lastPeriod": "Пред",
+    "recurring": "Повторяющийся",
+    "generateRecurring": "Сгенерировать",
+    "recurringDescription": "Выберите повторяющиеся доходы для автоматической генерации за следующий месяц"
   },
   "ai": {
     "title": "Лия",

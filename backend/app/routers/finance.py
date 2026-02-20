@@ -10,6 +10,7 @@ from app.middleware.rbac import require_role
 from app.models.finance import CashAdvance, Expense, Income, Payroll
 from app.models.user import RoleEnum, User
 from app.schemas.finance import (
+    AutoIncomeRequest,
     AutoPayrollRequest,
     CashAdvanceBalance,
     CashAdvanceCreate,
@@ -281,6 +282,33 @@ def delete_income(
 
     db.delete(income)
     db.commit()
+
+
+@router.post("/income/auto-generate", response_model=List[IncomeResponse], status_code=status.HTTP_201_CREATED)
+def auto_generate_income(
+    data: AutoIncomeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    records = []
+    for entry in data.entries:
+        income = Income(
+            source=entry.source,
+            description=entry.description,
+            amount=entry.amount,
+            date=entry.date,
+            category=entry.category,
+            payment_source=entry.payment_source,
+            is_recurring=entry.is_recurring,
+        )
+        db.add(income)
+        records.append(income)
+
+    db.commit()
+    for r in records:
+        db.refresh(r)
+
+    return records
 
 
 # --- Cash Advances ---

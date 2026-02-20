@@ -75,6 +75,7 @@ class Income(Base):
     category: Mapped[str] = mapped_column(String(100))
     receipt_url: Mapped[Optional[str]] = mapped_column(String(500))
     payment_source: Mapped[Optional[str]] = mapped_column(String(20), default="cash")
+    is_recurring: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
 
 

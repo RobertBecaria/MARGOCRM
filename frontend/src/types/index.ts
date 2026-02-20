@@ -109,6 +109,7 @@ export interface Income {
   category: string;
   receipt_url: string | null;
   payment_source: string | null;
+  is_recurring: boolean;
 }
 
 export interface AiMessage {

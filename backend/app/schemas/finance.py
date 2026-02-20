@@ -92,6 +92,7 @@ class IncomeCreate(BaseModel):
     category: str
     receipt_url: Optional[str] = None
     payment_source: VALID_PAYMENT_SOURCES = "cash"
+    is_recurring: bool = False
 
     @field_validator("receipt_url")
     @classmethod
@@ -110,6 +111,7 @@ class IncomeResponse(BaseModel):
     category: str
     receipt_url: Optional[str] = None
     payment_source: Optional[VALID_PAYMENT_SOURCES] = "cash"
+    is_recurring: bool = False
     created_at: dt.datetime
 
     class Config:
@@ -144,6 +146,7 @@ class IncomeUpdate(BaseModel):
     category: Optional[str] = None
     receipt_url: Optional[str] = None
     payment_source: Optional[VALID_PAYMENT_SOURCES] = None
+    is_recurring: Optional[bool] = None
 
     @field_validator("receipt_url")
     @classmethod
@@ -206,6 +209,20 @@ class CashAdvanceBalance(BaseModel):
     total_advanced: float
     total_spent: float
     remaining: float
+
+
+class AutoIncomeEntry(BaseModel):
+    source: str
+    description: str
+    amount: float = Field(gt=0)
+    date: dt.date
+    category: str
+    payment_source: VALID_PAYMENT_SOURCES = "cash"
+    is_recurring: bool = True
+
+
+class AutoIncomeRequest(BaseModel):
+    entries: list[AutoIncomeEntry]
 
 
 class AutoPayrollEntry(BaseModel):
