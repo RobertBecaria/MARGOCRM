@@ -7,6 +7,7 @@
     "tasks": "Задачи",
     "finance": "Финансы",
     "notifications": "Уведомления",
+    "notes": "Заметки",
     "settings": "Настройки",
     "myDay": "Мой день",
     "mySchedule": "Моё расписание",
@@ -171,6 +172,18 @@
     "typeTask": "Задачи",
     "typePayment": "Оплата",
     "typeSystem": "Система"
+  },
+  "notes": {
+    "title": "Заметки",
+    "newNote": "Новая заметка",
+    "editNote": "Редактировать",
+    "empty": "Пока нет заметок",
+    "emptyHint": "Создайте первую заметку!",
+    "titlePlaceholder": "Название заметки",
+    "contentPlaceholder": "Текст заметки...",
+    "color": "Цвет",
+    "confirmDelete": "Удалить эту заметку?",
+    "searchPlaceholder": "Поиск заметок..."
   },
   "dashboard": {
     "welcome": "Добро пожаловать",
