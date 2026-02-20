@@ -48,6 +48,7 @@ interface CashAdvanceCreate {
   amount: number;
   note?: string;
   date: string;
+  payment_source?: string;
 }
 
 interface IncomeCreate {
@@ -57,6 +58,7 @@ interface IncomeCreate {
   date: string;
   category: string;
   receipt_url?: string;
+  payment_source?: string;
 }
 
 interface IncomeUpdate {
@@ -66,6 +68,7 @@ interface IncomeUpdate {
   date?: string;
   category?: string;
   receipt_url?: string;
+  payment_source?: string;
 }
 
 export interface FinanceSummary {

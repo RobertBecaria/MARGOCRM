@@ -87,6 +87,7 @@ export interface CashAdvance {
   amount: number;
   note: string | null;
   date: string;
+  payment_source: string | null;
   created_by: number;
   created_at: string;
 }
@@ -107,6 +108,7 @@ export interface Income {
   date: string;
   category: string;
   receipt_url: string | null;
+  payment_source: string | null;
 }
 
 export interface AiMessage {

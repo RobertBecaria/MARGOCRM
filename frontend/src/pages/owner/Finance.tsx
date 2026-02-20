@@ -792,7 +792,7 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "" });
+  const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "", payment_source: "cash" });
   const [receiptUploading, setReceiptUploading] = useState(false);
   const receiptInputRef = useRef<HTMLInputElement>(null);
 
@@ -817,12 +817,12 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   function closeModal() {
     setModalOpen(false);
     setEditing(null);
-    setForm({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "" });
+    setForm({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "", payment_source: "cash" });
   }
 
   function openEdit(i: typeof incomeList[0]) {
     setEditing(i.id);
-    setForm({ source: i.source, description: i.description, amount: String(i.amount), date: i.date, category: i.category, receipt_url: i.receipt_url || "" });
+    setForm({ source: i.source, description: i.description, amount: String(i.amount), date: i.date, category: i.category, receipt_url: i.receipt_url || "", payment_source: i.payment_source || "cash" });
     setModalOpen(true);
   }
 
@@ -852,8 +852,44 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
 
   if (isLoading) return <LoadingSpinner />;
 
+  const incCashTotal = incomeList.filter((i) => !i.payment_source || i.payment_source === "cash").reduce((s, i) => s + i.amount, 0);
+  const incIpTotal = incomeList.filter((i) => i.payment_source === "ip").reduce((s, i) => s + i.amount, 0);
+  const incCardTotal = incomeList.filter((i) => i.payment_source === "card").reduce((s, i) => s + i.amount, 0);
+
   return (
     <div className="space-y-4">
+      {/* Source stats */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.total")}</div>
+            <div className="text-lg font-bold text-white">{formatMoney(incCashTotal + incIpTotal + incCardTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
+            <div className="text-lg font-bold text-green-400">{formatMoney(incCashTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
+            <div className="text-lg font-bold text-blue-400">{formatMoney(incIpTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
+            <div className="text-lg font-bold text-purple-400">{formatMoney(incCardTotal)}</div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex justify-end">
         <Button onClick={() => { closeModal(); setModalOpen(true); }}>
           <Plus size={16} />
@@ -864,7 +900,7 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
       {incomeList.length === 0 ? (
         <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
-        <Table headers={[t("finance.source"), t("common.description"), t("finance.amount"), t("common.date"), ""]}>
+        <Table headers={[t("finance.source"), t("common.description"), t("finance.amount"), t("finance.paymentSource"), t("common.date"), ""]}>
           {incomeList.map((i) => (
             <tr key={i.id}>
               <Td className="font-medium">{i.source}</Td>
@@ -879,6 +915,9 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
                 </div>
               </Td>
               <Td className="font-medium">{formatMoney(i.amount)}</Td>
+              <Td className="text-xs">
+                {i.payment_source === "ip" ? t("finance.sourceIP") : i.payment_source === "card" ? t("finance.sourceCard") : t("finance.sourceCash")}
+              </Td>
               <Td>{format(parseISO(i.date), "d MMM yyyy", { locale: ru })}</Td>
               <Td>
                 <div className="flex gap-1">
@@ -907,6 +946,16 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <Select
+            label={t("finance.paymentSource")}
+            options={[
+              { value: "cash", label: t("finance.sourceCash") },
+              { value: "card", label: t("finance.sourceCard") },
+              { value: "ip", label: t("finance.sourceIP") },
+            ]}
+            value={form.payment_source}
+            onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
+          />
 
           {/* Receipt upload */}
           <div>
@@ -1044,7 +1093,7 @@ function ReportsTab({ t }: { t: (k: string) => string }) {
 function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd") });
+  const [form, setForm] = useState({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash" });
 
   const { data: advances = [], isLoading } = useQuery({ queryKey: ["cash-advances"], queryFn: getCashAdvances });
   const { data: balances = [] } = useQuery({ queryKey: ["cash-advance-balances"], queryFn: getCashAdvanceBalances });
@@ -1058,7 +1107,7 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       queryClient.invalidateQueries({ queryKey: ["cash-advances"] });
       queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
       setModalOpen(false);
-      setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd") });
+      setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash" });
     },
   });
 
@@ -1073,8 +1122,44 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
 
   if (isLoading) return <LoadingSpinner />;
 
+  const advCashTotal = advances.filter((a) => !a.payment_source || a.payment_source === "cash").reduce((s, a) => s + a.amount, 0);
+  const advIpTotal = advances.filter((a) => a.payment_source === "ip").reduce((s, a) => s + a.amount, 0);
+  const advCardTotal = advances.filter((a) => a.payment_source === "card").reduce((s, a) => s + a.amount, 0);
+
   return (
     <div className="space-y-6">
+      {/* Source stats */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.total")}</div>
+            <div className="text-lg font-bold text-white">{formatMoney(advCashTotal + advIpTotal + advCardTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-green-500/10"><Banknote size={20} className="text-green-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCash")}</div>
+            <div className="text-lg font-bold text-green-400">{formatMoney(advCashTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-500/10"><Building2 size={20} className="text-blue-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceIP")}</div>
+            <div className="text-lg font-bold text-blue-400">{formatMoney(advIpTotal)}</div>
+          </div>
+        </div>
+        <div className="glass-card rounded-xl p-4 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-purple-500/10"><CreditCard size={20} className="text-purple-400" /></div>
+          <div>
+            <div className="text-xs text-gray-500">{t("finance.sourceCard")}</div>
+            <div className="text-lg font-bold text-purple-400">{formatMoney(advCardTotal)}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Balance cards */}
       {balances.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1113,13 +1198,16 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       {advances.length === 0 ? (
         <div className="text-center py-8 text-gray-500">{t("finance.noAdvances")}</div>
       ) : (
-        <Table headers={[t("staff.employee"), t("finance.amount"), t("finance.advanceNote"), t("common.date"), ""]}>
+        <Table headers={[t("staff.employee"), t("finance.amount"), t("finance.paymentSource"), t("finance.advanceNote"), t("common.date"), ""]}>
           {advances.map((a) => {
             const user = userById.get(a.user_id);
             return (
               <tr key={a.id}>
                 <Td className="font-medium">{user?.full_name || `ID ${a.user_id}`}</Td>
                 <Td className="font-medium text-blue-400">{formatMoney(a.amount)}</Td>
+                <Td className="text-xs">
+                  {a.payment_source === "ip" ? t("finance.sourceIP") : a.payment_source === "card" ? t("finance.sourceCard") : t("finance.sourceCash")}
+                </Td>
                 <Td className="text-sm text-gray-400">{a.note || "—"}</Td>
                 <Td>{format(parseISO(a.date), "d MMM yyyy", { locale: ru })}</Td>
                 <Td>
@@ -1148,10 +1236,20 @@ function AdvancesTab({ t, queryClient }: { t: (k: string) => string; queryClient
           <Input label={t("finance.amount")} type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
           <Input label={t("finance.advanceNote")} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <Select
+            label={t("finance.paymentSource")}
+            options={[
+              { value: "cash", label: t("finance.sourceCash") },
+              { value: "card", label: t("finance.sourceCard") },
+              { value: "ip", label: t("finance.sourceIP") },
+            ]}
+            value={form.payment_source}
+            onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
+          />
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
             <Button
-              onClick={() => createMut.mutate({ user_id: Number(form.user_id), amount: Number(form.amount), note: form.note || undefined, date: form.date })}
+              onClick={() => createMut.mutate({ user_id: Number(form.user_id), amount: Number(form.amount), note: form.note || undefined, date: form.date, payment_source: form.payment_source })}
               loading={createMut.isPending}
               disabled={!form.user_id || !form.amount}
             >

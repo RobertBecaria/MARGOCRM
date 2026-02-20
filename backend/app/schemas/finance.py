@@ -82,6 +82,7 @@ class IncomeCreate(BaseModel):
     date: dt.date
     category: str
     receipt_url: Optional[str] = None
+    payment_source: str = "cash"
 
 
 class IncomeResponse(BaseModel):
@@ -92,6 +93,7 @@ class IncomeResponse(BaseModel):
     date: dt.date
     category: str
     receipt_url: Optional[str] = None
+    payment_source: Optional[str] = "cash"
     created_at: dt.datetime
 
     class Config:
@@ -119,6 +121,7 @@ class IncomeUpdate(BaseModel):
     date: Optional[dt.date] = None
     category: Optional[str] = None
     receipt_url: Optional[str] = None
+    payment_source: Optional[str] = None
 
 
 class MonthlySummary(BaseModel):
@@ -150,6 +153,7 @@ class CashAdvanceCreate(BaseModel):
     amount: float
     note: Optional[str] = None
     date: dt.date
+    payment_source: str = "cash"
 
 
 class CashAdvanceResponse(BaseModel):
@@ -159,6 +163,7 @@ class CashAdvanceResponse(BaseModel):
     amount: float
     note: Optional[str] = None
     date: dt.date
+    payment_source: Optional[str] = "cash"
     created_by: int
     created_at: dt.datetime
 
