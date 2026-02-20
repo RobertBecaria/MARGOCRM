@@ -76,7 +76,8 @@ export default function Finance() {
 
 function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ user_id: "", period_start: "", period_end: "", base_salary: "", bonuses: "0", deductions: "0" });
+  const [editing, setEditing] = useState<number | null>(null);
+  const [form, setForm] = useState({ user_id: "", period_start: "", period_end: "", base_salary: "", bonuses: "0", deductions: "0", payment_source: "cash" });
 
   const { data: records = [], isLoading } = useQuery({ queryKey: ["payroll"], queryFn: () => getPayroll() });
   const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
@@ -85,7 +86,12 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
 
   const createMut = useMutation({
     mutationFn: createPayroll,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setModalOpen(false); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
+  });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updatePayroll>[1] }) => updatePayroll(id, data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
   });
 
   const markPaidMut = useMutation({
@@ -93,11 +99,31 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll"] }),
   });
 
+  function closeModal() {
+    setModalOpen(false);
+    setEditing(null);
+    setForm({ user_id: "", period_start: "", period_end: "", base_salary: "", bonuses: "0", deductions: "0", payment_source: "cash" });
+  }
+
+  function openEdit(r: typeof records[0]) {
+    setEditing(r.id);
+    setForm({
+      user_id: String(r.user_id),
+      period_start: r.period_start,
+      period_end: r.period_end,
+      base_salary: String(r.base_salary),
+      bonuses: String(r.bonuses),
+      deductions: String(r.deductions),
+      payment_source: r.payment_source || "cash",
+    });
+    setModalOpen(true);
+  }
+
   function handleSubmit() {
     const base = Number(form.base_salary);
     const bon = Number(form.bonuses);
     const ded = Number(form.deductions);
-    createMut.mutate({
+    const payload = {
       user_id: Number(form.user_id),
       period_start: form.period_start,
       period_end: form.period_end,
@@ -105,15 +131,23 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
       bonuses: bon,
       deductions: ded,
       net_amount: base + bon - ded,
-    });
+      payment_source: form.payment_source,
+    };
+    if (editing) {
+      updateMut.mutate({ id: editing, data: payload });
+    } else {
+      createMut.mutate(payload);
+    }
   }
 
   if (isLoading) return <LoadingSpinner />;
 
+  const sourceLabel = (src: string | null) => src === "ip" ? t("finance.sourceIP") : t("finance.sourceCash");
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setModalOpen(true)}>
+        <Button onClick={() => { closeModal(); setModalOpen(true); }}>
           <Plus size={16} />
           {t("finance.createRecord")}
         </Button>
@@ -123,7 +157,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
         <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>
       ) : (
         <div className="overflow-x-auto">
-          <Table headers={[t("staff.employee"), t("finance.period"), t("finance.baseSalary"), t("finance.bonuses"), t("finance.deductions"), t("finance.total"), t("staff.status"), ""]}>
+          <Table headers={[t("staff.employee"), t("finance.period"), t("finance.baseSalary"), t("finance.bonuses"), t("finance.deductions"), t("finance.total"), t("finance.paymentSource"), t("staff.status"), ""]}>
             {records.map((r) => {
               const user = userById.get(r.user_id);
               return (
@@ -136,21 +170,31 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
                   <Td>{formatMoney(r.bonuses)}</Td>
                   <Td>{formatMoney(r.deductions)}</Td>
                   <Td className="font-medium">{formatMoney(r.net_amount)}</Td>
+                  <Td className="text-xs">{sourceLabel(r.payment_source)}</Td>
                   <Td>
                     <Badge color={r.status === "paid" ? "green" : "orange"}>
                       {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
                     </Badge>
                   </Td>
                   <Td>
-                    {r.status === "pending" && (
+                    <div className="flex gap-1">
                       <button
-                        onClick={() => markPaidMut.mutate(r.id)}
-                        className="p-1.5 rounded-md text-gray-400 hover:text-green-400 hover:bg-white/10"
-                        title={t("finance.paid")}
+                        onClick={() => openEdit(r)}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-blue-400 hover:bg-white/10"
+                        title={t("common.edit")}
                       >
-                        <Check size={15} />
+                        <Pencil size={15} />
                       </button>
-                    )}
+                      {r.status === "pending" && (
+                        <button
+                          onClick={() => markPaidMut.mutate(r.id)}
+                          className="p-1.5 rounded-md text-gray-400 hover:text-green-400 hover:bg-white/10"
+                          title={t("finance.paid")}
+                        >
+                          <Check size={15} />
+                        </button>
+                      )}
+                    </div>
                   </Td>
                 </tr>
               );
@@ -159,7 +203,7 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
         </div>
       )}
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t("finance.createRecord")}>
+      <Modal open={modalOpen} onClose={closeModal} title={editing ? t("finance.editPayroll") : t("finance.createRecord")}>
         <div className="space-y-4">
           <Select
             label={t("staff.employee")}
@@ -176,9 +220,18 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
             <Input label={t("finance.bonuses")} type="number" value={form.bonuses} onChange={(e) => setForm({ ...form, bonuses: e.target.value })} />
             <Input label={t("finance.deductions")} type="number" value={form.deductions} onChange={(e) => setForm({ ...form, deductions: e.target.value })} />
           </div>
+          <Select
+            label={t("finance.paymentSource")}
+            options={[
+              { value: "cash", label: t("finance.sourceCash") },
+              { value: "ip", label: t("finance.sourceIP") },
+            ]}
+            value={form.payment_source}
+            onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
+          />
           <div className="flex gap-3 justify-end pt-2">
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
-            <Button onClick={handleSubmit} loading={createMut.isPending}>{t("common.save")}</Button>
+            <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
+            <Button onClick={handleSubmit} loading={createMut.isPending || updateMut.isPending}>{t("common.save")}</Button>
           </div>
         </div>
       </Modal>

@@ -9,6 +9,20 @@ interface PayrollCreate {
   bonuses?: number;
   deductions?: number;
   net_amount: number;
+  payment_source?: string;
+}
+
+interface PayrollUpdate {
+  user_id?: number;
+  period_start?: string;
+  period_end?: string;
+  base_salary?: number;
+  bonuses?: number;
+  deductions?: number;
+  net_amount?: number;
+  payment_source?: string;
+  status?: PayrollStatus;
+  paid_date?: string;
 }
 
 interface ExpenseCreate {
@@ -64,7 +78,7 @@ export async function createPayroll(data: PayrollCreate): Promise<Payroll> {
   return response.data;
 }
 
-export async function updatePayroll(id: number, data: { status?: PayrollStatus; paid_date?: string }): Promise<Payroll> {
+export async function updatePayroll(id: number, data: PayrollUpdate): Promise<Payroll> {
   const response = await client.put<Payroll>(`/payroll/${id}`, data);
   return response.data;
 }

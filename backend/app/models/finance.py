@@ -38,6 +38,7 @@ class Payroll(Base):
     bonuses: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
     deductions: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
     net_amount: Mapped[float] = mapped_column(Numeric(12, 2))
+    payment_source: Mapped[Optional[str]] = mapped_column(String(20), default="cash")
     status: Mapped[PayrollStatus] = mapped_column(Enum(PayrollStatus), default=PayrollStatus.pending)
     paid_date: Mapped[Optional[dt.date]] = mapped_column(Date)
 

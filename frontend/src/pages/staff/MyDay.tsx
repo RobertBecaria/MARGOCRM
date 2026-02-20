@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Calendar, Clock, LogIn, LogOut, Sparkles, AlertCircle, Receipt, Camera, Loader2, Plus } from "lucide-react";
+import { Calendar, Clock, LogIn, LogOut, Sparkles, AlertCircle, Receipt, Camera, Loader2, Plus, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useAuth } from "../../hooks/useAuth";
@@ -13,7 +13,7 @@ import { getExpenses, createExpense } from "../../api/finance";
 import { getCategories } from "../../api/categories";
 import { uploadFile } from "../../api/uploads";
 import type { TaskStatus } from "../../types";
-import { PRIORITY_COLOR, STATUS_FLOW, STATUS_LABEL_KEYS } from "../../utils/constants";
+import { PRIORITY_COLOR } from "../../utils/constants";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -239,20 +239,21 @@ export default function MyDay() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    {STATUS_FLOW.map((status) => (
+                    {task.status === "pending" && (
                       <button
-                        key={status}
-                        onClick={() => updateMut.mutate({ id: task.id, status })}
-                        disabled={task.status === status}
-                        className={`text-xs px-2 py-1 rounded-md transition-colors ${
-                          task.status === status
-                            ? "bg-blue-500/15 text-blue-400 font-medium"
-                            : "text-gray-500 hover:bg-white/10"
-                        }`}
+                        onClick={() => updateMut.mutate({ id: task.id, status: "in_progress" })}
+                        className="text-xs px-2 py-1 rounded-md text-blue-400 hover:bg-white/10 transition-colors"
                       >
-                        {t(STATUS_LABEL_KEYS[status])}
+                        {t("tasks.inProgress")}
                       </button>
-                    ))}
+                    )}
+                    <button
+                      onClick={() => updateMut.mutate({ id: task.id, status: "done" })}
+                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-md bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-colors font-medium"
+                    >
+                      <CheckCircle2 size={14} />
+                      {t("tasks.markDone")}
+                    </button>
                   </div>
                 </div>
               </div>

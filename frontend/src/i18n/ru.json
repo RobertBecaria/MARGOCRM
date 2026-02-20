@@ -89,7 +89,8 @@
     "selectAssignee": "Выберите сотрудника",
     "priority": "Приоритет",
     "allPriorities": "Все приоритеты",
-    "dueDate": "Срок"
+    "dueDate": "Срок",
+    "markDone": "Выполнено"
   },
   "finance": {
     "title": "Финансы",
@@ -124,7 +125,11 @@
     "select": "Выберите",
     "editExpense": "Редактировать расход",
     "editIncome": "Редактировать доход",
-    "confirmDelete": "Удалить эту запись?"
+    "confirmDelete": "Удалить эту запись?",
+    "paymentSource": "Источник выплаты",
+    "sourceCash": "Наличные",
+    "sourceIP": "ИП",
+    "editPayroll": "Редактировать зарплату"
   },
   "ai": {
     "title": "Лия",

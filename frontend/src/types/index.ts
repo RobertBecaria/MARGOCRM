@@ -62,6 +62,7 @@ export interface Payroll {
   bonuses: number;
   deductions: number;
   net_amount: number;
+  payment_source: string | null;
   status: PayrollStatus;
   paid_date: string | null;
 }

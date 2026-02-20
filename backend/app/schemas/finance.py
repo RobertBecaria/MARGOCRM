@@ -15,13 +15,18 @@ class PayrollCreate(BaseModel):
     bonuses: float = 0
     deductions: float = 0
     net_amount: float
+    payment_source: str = "cash"
 
 
 class PayrollUpdate(BaseModel):
+    user_id: Optional[int] = None
+    period_start: Optional[dt.date] = None
+    period_end: Optional[dt.date] = None
     base_salary: Optional[float] = None
     bonuses: Optional[float] = None
     deductions: Optional[float] = None
     net_amount: Optional[float] = None
+    payment_source: Optional[str] = None
     status: Optional[PayrollStatus] = None
     paid_date: Optional[dt.date] = None
 
@@ -36,6 +41,7 @@ class PayrollResponse(BaseModel):
     bonuses: float
     deductions: float
     net_amount: float
+    payment_source: Optional[str] = "cash"
     status: PayrollStatus
     paid_date: Optional[dt.date] = None
 

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Calendar, Trash2 } from "lucide-react";
+import { Plus, Calendar, Trash2, CheckCircle2 } from "lucide-react";
 import { format, parseISO, isPast } from "date-fns";
 import { ru } from "date-fns/locale";
 import { getTasks, createTask, updateTask, deleteTask } from "../../api/tasks";
@@ -344,13 +344,24 @@ function TaskCard({
           </span>
         )}
       </div>
-      {next && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onStatusChange(task, next); }}
-          className="mt-2 text-xs text-blue-400 hover:underline"
-        >
-          &rarr; {t(`tasks.${next === "in_progress" ? "inProgress" : next}`)}
-        </button>
+      {task.status !== "done" && (
+        <div className="mt-2 flex items-center gap-2">
+          {next && next !== "done" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onStatusChange(task, next); }}
+              className="text-xs text-blue-400 hover:underline"
+            >
+              &rarr; {t(`tasks.${next === "in_progress" ? "inProgress" : next}`)}
+            </button>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onStatusChange(task, "done"); }}
+            className="flex items-center gap-1 text-xs px-2 py-1 rounded-md bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-colors"
+          >
+            <CheckCircle2 size={13} />
+            {t("tasks.markDone")}
+          </button>
+        </div>
       )}
     </div>
   );
