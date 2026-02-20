@@ -83,6 +83,10 @@ export async function updatePayroll(id: number, data: PayrollUpdate): Promise<Pa
   return response.data;
 }
 
+export async function deletePayroll(id: number): Promise<void> {
+  await client.delete(`/payroll/${id}`);
+}
+
 export async function getExpenses(status?: string): Promise<Expense[]> {
   const params = status ? { status } : {};
   const response = await client.get<Expense[]>("/expenses", { params });

@@ -9,7 +9,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 import {
-  getPayroll, createPayroll, updatePayroll,
+  getPayroll, createPayroll, updatePayroll, deletePayroll,
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense,
   getIncome, createIncome, updateIncome, deleteIncome,
   getFinanceSummary,
@@ -77,6 +77,7 @@ export default function Finance() {
 function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState({ user_id: "", period_start: "", period_end: "", base_salary: "", bonuses: "0", deductions: "0", payment_source: "cash" });
 
   const { data: records = [], isLoading } = useQuery({ queryKey: ["payroll"], queryFn: () => getPayroll() });
@@ -97,6 +98,11 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
   const markPaidMut = useMutation({
     mutationFn: (id: number) => updatePayroll(id, { status: "paid" as PayrollStatus, paid_date: format(new Date(), "yyyy-MM-dd") }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll"] }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: deletePayroll,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setConfirmDeleteId(null); },
   });
 
   function closeModal() {
@@ -194,6 +200,13 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
                           <Check size={15} />
                         </button>
                       )}
+                      <button
+                        onClick={() => setConfirmDeleteId(r.id)}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-red-400 hover:bg-white/10"
+                        title={t("common.delete")}
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </Td>
                 </tr>
@@ -232,6 +245,19 @@ function PayrollTab({ t, queryClient }: { t: (k: string) => string; queryClient:
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={closeModal}>{t("common.cancel")}</Button>
             <Button onClick={handleSubmit} loading={createMut.isPending || updateMut.isPending}>{t("common.save")}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete confirmation */}
+      <Modal open={confirmDeleteId !== null} onClose={() => setConfirmDeleteId(null)} title={t("finance.confirmDelete")}>
+        <div className="space-y-4">
+          <p className="text-sm text-gray-400">{t("finance.confirmDelete")}</p>
+          <div className="flex gap-3 justify-end">
+            <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t("common.cancel")}</Button>
+            <Button onClick={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)} loading={deleteMut.isPending}>
+              {t("common.delete")}
+            </Button>
           </div>
         </div>
       </Modal>

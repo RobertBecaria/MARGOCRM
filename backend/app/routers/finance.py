@@ -76,6 +76,20 @@ def update_payroll(
     return payroll
 
 
+@router.delete("/payroll/{payroll_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_payroll(
+    payroll_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner)),
+):
+    payroll = db.query(Payroll).filter(Payroll.id == payroll_id).first()
+    if not payroll:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payroll record not found")
+
+    db.delete(payroll)
+    db.commit()
+
+
 # --- Expenses ---
 
 @router.get("/expenses", response_model=List[ExpenseResponse])
