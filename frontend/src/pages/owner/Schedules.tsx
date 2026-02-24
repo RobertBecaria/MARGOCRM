@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Trash2,
 } from "lucide-react";
 import {
   startOfWeek,
@@ -72,7 +73,7 @@ export default function Schedules() {
     queryFn: () => getUsers(),
   });
 
-  const staffList = users.filter((u) => u.role !== "owner");
+  const staffList = users.filter((u) => u.is_active);
 
   const staffMap = useMemo(() => {
     const map = new Map<number, { user: User; colorIdx: number }>();
@@ -353,9 +354,10 @@ export default function Schedules() {
               <Button
                 variant="danger"
                 loading={deleteMut.isPending}
-                onClick={() => deleteMut.mutate(editing.id)}
+                onClick={() => { if (confirm(t("common.confirm") + "?")) deleteMut.mutate(editing.id); }}
               >
-                {t("schedule.cancelled")}
+                <Trash2 size={14} />
+                {t("common.delete")}
               </Button>
             )}
             <Button variant="secondary" onClick={closeModal}>
