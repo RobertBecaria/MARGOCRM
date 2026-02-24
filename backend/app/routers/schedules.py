@@ -87,8 +87,7 @@ def cancel_schedule(
     if not schedule:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule not found")
 
-    from app.models.schedule import ScheduleStatus
-    schedule.status = ScheduleStatus.cancelled
+    db.delete(schedule)
     db.commit()
 
 

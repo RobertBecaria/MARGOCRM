@@ -14,6 +14,7 @@ import {
   CreditCard,
   X,
   Sparkles,
+  StickyNote,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -23,6 +24,7 @@ const ownerNav = [
   { to: "/tasks", icon: CheckSquare, label: "nav.tasks" },
   { to: "/finance", icon: Wallet, label: "nav.finance" },
   { to: "/staff", icon: Users, label: "nav.staff" },
+  { to: "/notes", icon: StickyNote, label: "nav.notes" },
   { to: "/notifications", icon: Bell, label: "nav.notifications" },
   { to: "/settings", icon: Settings, label: "nav.settings" },
 ];

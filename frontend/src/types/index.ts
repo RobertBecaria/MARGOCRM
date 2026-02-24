@@ -131,6 +131,18 @@ export interface Notification {
   created_at: string;
 }
 
+export type NoteColor = "yellow" | "blue" | "green" | "pink" | "purple" | "orange";
+
+export interface Note {
+  id: number;
+  user_id: number;
+  title: string;
+  content: string;
+  color: NoteColor;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AuthTokens {
   access_token: string;
   refresh_token: string;

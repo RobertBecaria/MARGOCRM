@@ -14,6 +14,7 @@ const Schedules = lazy(() => import("./pages/owner/Schedules"));
 const Tasks = lazy(() => import("./pages/owner/Tasks"));
 const Finance = lazy(() => import("./pages/owner/Finance"));
 const Notifications = lazy(() => import("./pages/owner/Notifications"));
+const Notes = lazy(() => import("./pages/owner/Notes"));
 const Settings = lazy(() => import("./pages/owner/Settings"));
 const MyDay = lazy(() => import("./pages/staff/MyDay"));
 const MySchedule = lazy(() => import("./pages/staff/MySchedule"));
@@ -57,6 +58,7 @@ function App() {
               <Route path="/schedules" element={<Schedules />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/finance" element={<Finance />} />
+              <Route path="/notes" element={<Notes />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/settings" element={<Settings />} />
               {/* Staff routes */}
