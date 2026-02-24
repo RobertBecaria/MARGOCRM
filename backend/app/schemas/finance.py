@@ -62,8 +62,8 @@ class ExpenseCreate(BaseModel):
     @field_validator("receipt_url")
     @classmethod
     def validate_receipt_url(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not v.startswith(("https://", "http://")):
-            raise ValueError("receipt_url must be an HTTP(S) URL")
+        if v is not None and not v.startswith(("https://", "http://", "/api/uploads/")):
+            raise ValueError("receipt_url must be an HTTP(S) URL or an internal upload path")
         return v
 
 
@@ -97,8 +97,8 @@ class IncomeCreate(BaseModel):
     @field_validator("receipt_url")
     @classmethod
     def validate_receipt_url(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not v.startswith(("https://", "http://")):
-            raise ValueError("receipt_url must be an HTTP(S) URL")
+        if v is not None and not v.startswith(("https://", "http://", "/api/uploads/")):
+            raise ValueError("receipt_url must be an HTTP(S) URL or an internal upload path")
         return v
 
 
@@ -129,8 +129,8 @@ class ExpenseUpdate(BaseModel):
     @field_validator("receipt_url")
     @classmethod
     def validate_receipt_url(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not v.startswith(("https://", "http://")):
-            raise ValueError("receipt_url must be an HTTP(S) URL")
+        if v is not None and not v.startswith(("https://", "http://", "/api/uploads/")):
+            raise ValueError("receipt_url must be an HTTP(S) URL or an internal upload path")
         return v
 
 
@@ -151,8 +151,8 @@ class IncomeUpdate(BaseModel):
     @field_validator("receipt_url")
     @classmethod
     def validate_receipt_url(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and not v.startswith(("https://", "http://")):
-            raise ValueError("receipt_url must be an HTTP(S) URL")
+        if v is not None and not v.startswith(("https://", "http://", "/api/uploads/")):
+            raise ValueError("receipt_url must be an HTTP(S) URL or an internal upload path")
         return v
 
 
