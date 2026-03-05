@@ -1,7 +1,7 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins, CalendarDays } from "lucide-react";
+import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parseISO, addDays, differenceInDays, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -1332,10 +1332,17 @@ const SOURCE_LABELS: Record<string, string> = {
   card: "finance.sourceCard",
 };
 
+const MONTH_NAMES = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
+
 function BalanceTab({ t }: { t: (k: string) => string }) {
   const [period, setPeriod] = useState("month");
   const [customMonth, setCustomMonth] = useState("");
-  const monthInputRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   // Compute start/end for custom month
   const customStart = customMonth ? `${customMonth}-01` : undefined;
@@ -1348,15 +1355,30 @@ function BalanceTab({ t }: { t: (k: string) => string }) {
     queryFn: () => getFinanceBalance(period, customStart, customEnd),
   });
 
-  function handleMonthChange(value: string) {
+  function handleMonthSelect(monthIndex: number) {
+    const value = `${pickerYear}-${String(monthIndex + 1).padStart(2, "0")}`;
     setCustomMonth(value);
     setPeriod("custom");
+    setPickerOpen(false);
   }
 
   function handlePeriodClick(id: string) {
     setPeriod(id);
     setCustomMonth("");
+    setPickerOpen(false);
   }
+
+  // Close picker on outside click
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function onClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [pickerOpen]);
 
   if (isLoading) return <LoadingSpinner />;
   if (!data) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
@@ -1378,9 +1400,9 @@ function BalanceTab({ t }: { t: (k: string) => string }) {
             {t(p.label)}
           </button>
         ))}
-        <div className="relative">
+        <div className="relative" ref={pickerRef}>
           <button
-            onClick={() => monthInputRef.current?.showPicker()}
+            onClick={() => { setPickerOpen(!pickerOpen); setPickerYear(customMonth ? parseInt(customMonth.split("-")[0]) : new Date().getFullYear()); }}
             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
               period === "custom"
                 ? "bg-blue-500/15 text-blue-400 font-medium"
@@ -1392,13 +1414,38 @@ function BalanceTab({ t }: { t: (k: string) => string }) {
               ? format(parseISO(`${customMonth}-01`), "LLLL yyyy", { locale: ru })
               : t("finance.pickMonth")}
           </button>
-          <input
-            ref={monthInputRef}
-            type="month"
-            value={customMonth}
-            onChange={(e) => handleMonthChange(e.target.value)}
-            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-          />
+          {pickerOpen && (
+            <div className="absolute top-full left-0 mt-2 z-50 glass-card rounded-xl p-3 shadow-xl border border-white/10 w-64">
+              <div className="flex items-center justify-between mb-3">
+                <button onClick={() => setPickerYear(y => y - 1)} className="p-1 rounded hover:bg-white/10 text-gray-400">
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-sm font-medium text-white">{pickerYear}</span>
+                <button onClick={() => setPickerYear(y => y + 1)} className="p-1 rounded hover:bg-white/10 text-gray-400">
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {MONTH_NAMES.map((name, i) => {
+                  const val = `${pickerYear}-${String(i + 1).padStart(2, "0")}`;
+                  const isSelected = customMonth === val;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleMonthSelect(i)}
+                      className={`text-xs py-1.5 px-1 rounded-lg transition-colors ${
+                        isSelected
+                          ? "bg-blue-500/20 text-blue-400 font-medium"
+                          : "text-gray-400 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
