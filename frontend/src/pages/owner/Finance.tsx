@@ -41,7 +41,7 @@ function SourceStats({ items, amountKey = "amount", t }: {
   const total = cashTotal + ipTotal + cardTotal;
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div className="glass-card rounded-xl p-4 flex items-center gap-3">
         <div className="p-2 rounded-lg bg-white/5"><span className="text-lg font-bold text-gray-300">&Sigma;</span></div>
         <div>
