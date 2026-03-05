@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins, CalendarDays, ChevronLeft, ChevronRight, DollarSign, Receipt } from "lucide-react";
 import { format, parseISO, addDays, differenceInDays, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -12,11 +12,13 @@ import {
   getFinanceBalance,
 } from "../../api/finance";
 import type { BalanceResponse } from "../../api/finance";
-import { uploadFile } from "../../api/uploads";
 import { getUsers } from "../../api/users";
 import type { PayrollStatus, User } from "../../types";
 import { getCategories } from "../../api/categories";
 import { formatMoney } from "../../utils/formatters";
+import { PAYMENT_SOURCE_OPTIONS } from "../../utils/constants";
+import { toast } from "../../components/ui/Toast";
+import { useReceiptUpload } from "../../hooks/useReceiptUpload";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
@@ -27,11 +29,11 @@ import LoadingSpinner from "../../components/shared/LoadingSpinner";
 
 /* ── Shared: SourceStats ─────────────────────────────────────────── */
 
-function SourceStats({ items, amountKey = "amount", t }: {
+function SourceStats({ items, amountKey = "amount" }: {
   items: Array<{ payment_source?: string | null; [key: string]: any }>;
   amountKey?: string;
-  t: (k: string) => string;
 }) {
+  const { t } = useTranslation();
   let cashTotal = 0, ipTotal = 0, cardTotal = 0;
   for (const item of items) {
     const amt = Number(item[amountKey]) || 0;
@@ -78,13 +80,13 @@ function SourceStats({ items, amountKey = "amount", t }: {
 
 /* ── Shared: DeleteConfirmModal ──────────────────────────────────── */
 
-function DeleteConfirmModal({ open, onClose, onConfirm, isPending, t }: {
+function DeleteConfirmModal({ open, onClose, onConfirm, isPending }: {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
   isPending: boolean;
-  t: (k: string) => string;
 }) {
+  const { t } = useTranslation();
   return (
     <Modal open={open} onClose={onClose} title={t("finance.confirmDelete")}>
       <div className="space-y-4">
@@ -114,7 +116,6 @@ type TabId = (typeof tabs)[number]["id"];
 
 export default function Finance() {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabId>("balance");
 
   // Shared users query – passed down to PayrollTab & AdvancesTab
@@ -122,9 +123,21 @@ export default function Finance() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-purple-200">
-        {t("finance.title")}
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-purple-200">
+          {t("finance.title")}
+        </h1>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setActiveTab("income")}>
+            <DollarSign size={16} />
+            {t("finance.addIncome")}
+          </Button>
+          <Button variant="secondary" onClick={() => setActiveTab("expenses")}>
+            <Receipt size={16} />
+            {t("finance.addExpense")}
+          </Button>
+        </div>
+      </div>
 
       {/* Tabs */}
       <div className="flex border-b border-white/[0.06] overflow-x-auto">
@@ -143,18 +156,20 @@ export default function Finance() {
         ))}
       </div>
 
-      {activeTab === "payroll" && <PayrollTab t={t} queryClient={queryClient} users={users} />}
-      {activeTab === "expenses" && <ExpensesTab t={t} queryClient={queryClient} />}
-      {activeTab === "income" && <IncomeTab t={t} queryClient={queryClient} />}
-      {activeTab === "advances" && <AdvancesTab t={t} queryClient={queryClient} users={users} />}
-      {activeTab === "balance" && <BalanceTab t={t} />}
+      {activeTab === "payroll" && <PayrollTab users={users} />}
+      {activeTab === "expenses" && <ExpensesTab />}
+      {activeTab === "income" && <IncomeTab />}
+      {activeTab === "advances" && <AdvancesTab users={users} />}
+      {activeTab === "balance" && <BalanceTab />}
     </div>
   );
 }
 
 /* ── PayrollTab ──────────────────────────────────────────────────── */
 
-function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient>; users: User[] }) {
+function PayrollTab({ users }: { users: User[] }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
@@ -173,13 +188,13 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
   const createMut = useMutation({
     mutationFn: createPayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updatePayroll>[1] }) => updatePayroll(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const togglePaidMut = useMutation({
@@ -188,19 +203,19 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
         ? { status: "paid" as PayrollStatus, paid_date: format(new Date(), "yyyy-MM-dd") }
         : { status: "pending" as PayrollStatus, paid_date: undefined }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll"] }),
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deletePayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setConfirmDeleteId(null); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const autoMut = useMutation({
     mutationFn: autoGeneratePayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setAutoModalOpen(false); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const autoRows = useMemo(() => {
@@ -304,7 +319,10 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
   }
 
   function handleSubmit() {
-    if (!form.user_id || !form.period_start || !form.period_end || !form.base_salary) return;
+    if (!form.user_id || !form.period_start || !form.period_end || !form.base_salary) {
+      toast.error(t("finance.fillRequired"));
+      return;
+    }
     const base = Number(form.base_salary);
     const bon = Number(form.bonuses);
     const ded = Number(form.deductions);
@@ -383,7 +401,7 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
       )}
 
       {/* Source stats */}
-      <SourceStats items={filtered} amountKey="net_amount" t={t} />
+      <SourceStats items={filtered} amountKey="net_amount" />
 
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={openAutoModal}>
@@ -469,11 +487,7 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
           </div>
           <Select
             label={t("finance.paymentSource")}
-            options={[
-              { value: "cash", label: t("finance.sourceCash") },
-              { value: "card", label: t("finance.sourceCard") },
-              { value: "ip", label: t("finance.sourceIP") },
-            ]}
+            options={PAYMENT_SOURCE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
             value={form.payment_source}
             onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
           />
@@ -490,7 +504,6 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
         onClose={() => setConfirmDeleteId(null)}
         onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
         isPending={deleteMut.isPending}
-        t={t}
       />
 
       {/* Auto payroll modal */}
@@ -581,14 +594,15 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
 
 /* ── ExpensesTab ─────────────────────────────────────────────────── */
 
-function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
+function ExpensesTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [form, setForm] = useState({ category: "", description: "", amount: "", date: "", receipt_url: "", payment_source: "cash" });
-  const [receiptUploading, setReceiptUploading] = useState(false);
-  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const receipt = useReceiptUpload();
 
   const { data: expenses = [], isLoading } = useQuery({ queryKey: ["expenses", statusFilter], queryFn: () => getExpenses(statusFilter || undefined) });
   const { data: categories = [] } = useQuery({ queryKey: ["categories", "expense"], queryFn: () => getCategories("expense") });
@@ -596,19 +610,19 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   const createMut = useMutation({
     mutationFn: createExpense,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateExpense>[1] }) => updateExpense(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteExpense,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const approveMut = useMutation({
@@ -617,7 +631,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
     },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   function closeModal() {
@@ -633,7 +647,10 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
   }
 
   function handleSubmit() {
-    if (!form.category || !form.description || !form.amount || !form.date) return;
+    if (!form.category || !form.description || !form.amount || !form.date) {
+      toast.error(t("finance.fillRequired"));
+      return;
+    }
     const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined };
     if (editing) {
       updateMut.mutate({ id: editing, data: payload });
@@ -642,27 +659,12 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
     }
   }
 
-  async function handleReceiptUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setReceiptUploading(true);
-    try {
-      const result = await uploadFile(file);
-      setForm((prev) => ({ ...prev, receipt_url: result.url }));
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail || "Upload failed");
-    } finally {
-      setReceiptUploading(false);
-      if (receiptInputRef.current) receiptInputRef.current.value = "";
-    }
-  }
-
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-4">
       {/* Source stats */}
-      <SourceStats items={expenses} t={t} />
+      <SourceStats items={expenses} />
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
@@ -756,11 +758,7 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <Select
             label={t("finance.paymentSource")}
-            options={[
-              { value: "cash", label: t("finance.sourceCash") },
-              { value: "card", label: t("finance.sourceCard") },
-              { value: "ip", label: t("finance.sourceIP") },
-            ]}
+            options={PAYMENT_SOURCE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
             value={form.payment_source}
             onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
           />
@@ -771,18 +769,18 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => receiptInputRef.current?.click()}
-                disabled={receiptUploading}
+                onClick={() => receipt.inputRef.current?.click()}
+                disabled={receipt.uploading}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm glass-input text-gray-400 hover:text-purple-200 transition-colors disabled:opacity-50"
               >
-                {receiptUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {receipt.uploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 {t("expenses.uploadReceipt")}
               </button>
               {form.receipt_url && (
                 <span className="text-xs text-green-400">{t("expenses.receiptUploaded")}</span>
               )}
             </div>
-            <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload} />
+            <input ref={receipt.inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => receipt.handleUpload(e, (url) => setForm((prev) => ({ ...prev, receipt_url: url })))} />
           </div>
 
           <div className="flex gap-3 justify-end pt-2">
@@ -798,7 +796,6 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
         onClose={() => setConfirmDeleteId(null)}
         onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
         isPending={deleteMut.isPending}
-        t={t}
       />
     </div>
   );
@@ -806,13 +803,14 @@ function ExpensesTab({ t, queryClient }: { t: (k: string) => string; queryClient
 
 /* ── IncomeTab ───────────────────────────────────────────────────── */
 
-function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient> }) {
+function IncomeTab() {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState({ source: "", description: "", amount: "", date: "", category: "", receipt_url: "", payment_source: "cash", is_recurring: false });
-  const [receiptUploading, setReceiptUploading] = useState(false);
-  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const receipt = useReceiptUpload();
   const [autoModalOpen, setAutoModalOpen] = useState(false);
   const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
 
@@ -822,25 +820,25 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   const createMut = useMutation({
     mutationFn: createIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateIncome>[1] }) => updateIncome(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const autoMut = useMutation({
     mutationFn: autoGenerateIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); setAutoModalOpen(false); },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const recurringRows = useMemo(() => {
@@ -910,7 +908,10 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
   }
 
   function handleSubmit() {
-    if (!form.source || !form.description || !form.amount || !form.date || !form.category) return;
+    if (!form.source || !form.description || !form.amount || !form.date || !form.category) {
+      toast.error(t("finance.fillRequired"));
+      return;
+    }
     const payload = { ...form, amount: Number(form.amount), receipt_url: form.receipt_url || undefined, is_recurring: form.is_recurring };
     if (editing) {
       updateMut.mutate({ id: editing, data: payload });
@@ -919,27 +920,12 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
     }
   }
 
-  async function handleReceiptUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setReceiptUploading(true);
-    try {
-      const result = await uploadFile(file);
-      setForm((prev) => ({ ...prev, receipt_url: result.url }));
-    } catch (err: any) {
-      window.alert(err?.response?.data?.detail || "Upload failed");
-    } finally {
-      setReceiptUploading(false);
-      if (receiptInputRef.current) receiptInputRef.current.value = "";
-    }
-  }
-
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-4">
       {/* Source stats */}
-      <SourceStats items={incomeList} t={t} />
+      <SourceStats items={incomeList} />
 
       <div className="flex justify-end gap-2">
         {recurringRows.length > 0 && (
@@ -1010,11 +996,7 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <Select
             label={t("finance.paymentSource")}
-            options={[
-              { value: "cash", label: t("finance.sourceCash") },
-              { value: "card", label: t("finance.sourceCard") },
-              { value: "ip", label: t("finance.sourceIP") },
-            ]}
+            options={PAYMENT_SOURCE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
             value={form.payment_source}
             onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
           />
@@ -1035,18 +1017,18 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => receiptInputRef.current?.click()}
-                disabled={receiptUploading}
+                onClick={() => receipt.inputRef.current?.click()}
+                disabled={receipt.uploading}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm glass-input text-gray-400 hover:text-purple-200 transition-colors disabled:opacity-50"
               >
-                {receiptUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {receipt.uploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 {t("expenses.uploadReceipt")}
               </button>
               {form.receipt_url && (
                 <span className="text-xs text-green-400">{t("expenses.receiptUploaded")}</span>
               )}
             </div>
-            <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={handleReceiptUpload} />
+            <input ref={receipt.inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => receipt.handleUpload(e, (url) => setForm((prev) => ({ ...prev, receipt_url: url })))} />
           </div>
 
           <div className="flex gap-3 justify-end pt-2">
@@ -1062,7 +1044,6 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
         onClose={() => setConfirmDeleteId(null)}
         onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
         isPending={deleteMut.isPending}
-        t={t}
       />
 
       {/* Auto-generate recurring income modal */}
@@ -1118,12 +1099,13 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
 
 /* ── AdvancesTab ─────────────────────────────────────────────────── */
 
-function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient>; users: User[] }) {
+function AdvancesTab({ users }: { users: User[] }) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState(() => ({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash", receipt_url: "" }));
-  const [receiptUploading, setReceiptUploading] = useState(false);
-  const receiptInputRef = useRef<HTMLInputElement>(null);
+  const receipt = useReceiptUpload();
 
   const { data: advances = [], isLoading } = useQuery({ queryKey: ["cash-advances"], queryFn: getCashAdvances });
   const { data: balances = [] } = useQuery({ queryKey: ["cash-advance-balances"], queryFn: getCashAdvanceBalances });
@@ -1138,7 +1120,7 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
       setModalOpen(false);
       setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash", receipt_url: "" });
     },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   const deleteMut = useMutation({
@@ -1148,7 +1130,7 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
       queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
       setConfirmDeleteId(null);
     },
-    onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
+    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
   });
 
   if (isLoading) return <LoadingSpinner />;
@@ -1156,7 +1138,7 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
   return (
     <div className="space-y-6">
       {/* Source stats */}
-      <SourceStats items={advances} t={t} />
+      <SourceStats items={advances} />
 
       {/* Balance cards */}
       {balances.length > 0 && (
@@ -1245,11 +1227,7 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
           <Input label={t("common.date")} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <Select
             label={t("finance.paymentSource")}
-            options={[
-              { value: "cash", label: t("finance.sourceCash") },
-              { value: "card", label: t("finance.sourceCard") },
-              { value: "ip", label: t("finance.sourceIP") },
-            ]}
+            options={PAYMENT_SOURCE_OPTIONS.map(o => ({ value: o.value, label: t(o.labelKey) }))}
             value={form.payment_source}
             onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
           />
@@ -1259,31 +1237,18 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => receiptInputRef.current?.click()}
-                disabled={receiptUploading}
+                onClick={() => receipt.inputRef.current?.click()}
+                disabled={receipt.uploading}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm glass-input text-gray-400 hover:text-purple-200 transition-colors disabled:opacity-50"
               >
-                {receiptUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {receipt.uploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                 {t("expenses.uploadReceipt")}
               </button>
               {form.receipt_url && (
                 <span className="text-xs text-green-400">{t("expenses.receiptUploaded")}</span>
               )}
             </div>
-            <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              setReceiptUploading(true);
-              try {
-                const result = await uploadFile(file);
-                setForm((prev) => ({ ...prev, receipt_url: result.url }));
-              } catch (err: any) {
-                window.alert(err?.response?.data?.detail || "Upload failed");
-              } finally {
-                setReceiptUploading(false);
-                if (receiptInputRef.current) receiptInputRef.current.value = "";
-              }
-            }} />
+            <input ref={receipt.inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => receipt.handleUpload(e, (url) => setForm((prev) => ({ ...prev, receipt_url: url })))} />
           </div>
 
           <div className="flex gap-3 justify-end pt-2">
@@ -1304,7 +1269,6 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
         onClose={() => setConfirmDeleteId(null)}
         onConfirm={() => confirmDeleteId && deleteMut.mutate(confirmDeleteId)}
         isPending={deleteMut.isPending}
-        t={t}
       />
     </div>
   );
@@ -1332,12 +1296,12 @@ const SOURCE_LABELS: Record<string, string> = {
   card: "finance.sourceCard",
 };
 
-const MONTH_NAMES = [
-  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
-];
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
+  format(new Date(2024, i, 1), "LLLL", { locale: ru })
+);
 
-function BalanceTab({ t }: { t: (k: string) => string }) {
+function BalanceTab() {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState("month");
   const [customMonth, setCustomMonth] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);

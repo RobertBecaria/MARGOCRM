@@ -4,11 +4,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./i18n";
 import Layout from "./components/layout/Layout";
 import LoadingSpinner from "./components/shared/LoadingSpinner";
+import { ToastContainer } from "./components/ui/Toast";
 import { useAuth } from "./hooks/useAuth";
 
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
-const Dashboard = lazy(() => import("./pages/owner/Dashboard"));
 const Staff = lazy(() => import("./pages/owner/Staff"));
 const Schedules = lazy(() => import("./pages/owner/Schedules"));
 const Tasks = lazy(() => import("./pages/owner/Tasks"));
@@ -48,16 +48,16 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
+          <ToastContainer />
           <Routes>
             <Route path="/login" element={<LoginRoute />} />
             <Route path="/register" element={<RegisterRoute />} />
             <Route element={<Layout />}>
               {/* Owner/Manager routes */}
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/" element={<Finance />} />
               <Route path="/staff" element={<Staff />} />
               <Route path="/schedules" element={<Schedules />} />
               <Route path="/tasks" element={<Tasks />} />
-              <Route path="/finance" element={<Finance />} />
               <Route path="/notes" element={<Notes />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/settings" element={<Settings />} />

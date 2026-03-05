@@ -1,7 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  LayoutDashboard,
   Users,
   Calendar,
   CheckSquare,
@@ -19,10 +18,9 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 
 const ownerNav = [
-  { to: "/", icon: LayoutDashboard, label: "nav.dashboard" },
+  { to: "/", icon: Wallet, label: "nav.finance" },
   { to: "/schedules", icon: Calendar, label: "nav.schedules" },
   { to: "/tasks", icon: CheckSquare, label: "nav.tasks" },
-  { to: "/finance", icon: Wallet, label: "nav.finance" },
   { to: "/staff", icon: Users, label: "nav.staff" },
   { to: "/notes", icon: StickyNote, label: "nav.notes" },
   { to: "/notifications", icon: Bell, label: "nav.notifications" },

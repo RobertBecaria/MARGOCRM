@@ -1,6 +1,5 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard,
   Users,
   CheckSquare,
   Wallet,
@@ -13,10 +12,9 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 
 const ownerItems = [
-  { to: "/", icon: LayoutDashboard },
+  { to: "/", icon: Wallet },
   { to: "/staff", icon: Users },
   { to: "/tasks", icon: CheckSquare },
-  { to: "/finance", icon: Wallet },
 ];
 
 const staffItems = [

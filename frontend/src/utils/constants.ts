@@ -14,3 +14,9 @@ export const STATUS_LABEL_KEYS: Record<TaskStatus, string> = {
   in_progress: "tasks.inProgress",
   done: "tasks.done",
 };
+
+export const PAYMENT_SOURCE_OPTIONS = [
+  { value: "cash", labelKey: "finance.sourceCash" },
+  { value: "card", labelKey: "finance.sourceCard" },
+  { value: "ip", labelKey: "finance.sourceIP" },
+] as const;
