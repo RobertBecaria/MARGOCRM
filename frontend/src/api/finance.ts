@@ -49,6 +49,7 @@ interface CashAdvanceCreate {
   note?: string;
   date: string;
   payment_source?: string;
+  receipt_url?: string;
 }
 
 interface IncomeCreate {
@@ -176,8 +177,31 @@ export async function autoGenerateIncome(entries: AutoIncomeEntry[]): Promise<In
   return response.data;
 }
 
+export interface SourceBreakdown {
+  source: string;
+  income: number;
+  expenses: number;
+  payroll: number;
+  balance: number;
+}
+
+export interface BalanceResponse {
+  sources: SourceBreakdown[];
+  total_income: number;
+  total_expenses: number;
+  total_payroll: number;
+  total_balance: number;
+  period_start: string | null;
+  period_end: string | null;
+}
+
 export async function getFinanceSummary(): Promise<FinanceSummary> {
   const response = await client.get<FinanceSummary>("/finance/summary");
+  return response.data;
+}
+
+export async function getFinanceBalance(period: string = "month"): Promise<BalanceResponse> {
+  const response = await client.get<BalanceResponse>("/finance/balance", { params: { period } });
   return response.data;
 }
 

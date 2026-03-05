@@ -88,6 +88,7 @@ class CashAdvance(Base):
     note: Mapped[Optional[str]] = mapped_column(String(500))
     date: Mapped[dt.date] = mapped_column(Date)
     payment_source: Mapped[Optional[str]] = mapped_column(String(20), default="cash")
+    receipt_url: Mapped[Optional[str]] = mapped_column(String(500))
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, server_default=func.now())
 

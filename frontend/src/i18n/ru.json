@@ -147,7 +147,18 @@
     "lastPeriod": "Пред",
     "recurring": "Повторяющийся",
     "generateRecurring": "Сгенерировать",
-    "recurringDescription": "Выберите повторяющиеся доходы для автоматической генерации за следующий месяц"
+    "recurringDescription": "Выберите повторяющиеся доходы для автоматической генерации за следующий месяц",
+    "balanceTab": "Баланс",
+    "periodDay": "День",
+    "periodWeek": "Неделя",
+    "periodMonth": "Месяц",
+    "periodYear": "Год",
+    "periodAll": "Всё время",
+    "balanceIncome": "Доходы",
+    "balanceExpenses": "Расходы",
+    "balancePayroll": "Зарплаты",
+    "balanceNet": "Баланс",
+    "totalBalance": "Общий баланс"
   },
   "ai": {
     "title": "Лия",

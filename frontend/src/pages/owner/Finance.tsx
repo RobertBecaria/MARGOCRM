@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw } from "lucide-react";
+import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 import { format, parseISO, addDays, differenceInDays, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -9,7 +9,9 @@ import {
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense,
   getIncome, createIncome, updateIncome, deleteIncome, autoGenerateIncome,
   getCashAdvances, createCashAdvance, deleteCashAdvance, getCashAdvanceBalances,
+  getFinanceBalance,
 } from "../../api/finance";
+import type { BalanceResponse } from "../../api/finance";
 import { uploadFile } from "../../api/uploads";
 import { getUsers } from "../../api/users";
 import type { PayrollStatus, User } from "../../types";
@@ -103,6 +105,7 @@ const tabs = [
   { id: "expenses", label: "finance.expenses" },
   { id: "payroll", label: "finance.payroll" },
   { id: "advances", label: "finance.advances" },
+  { id: "balance", label: "finance.balanceTab" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -144,6 +147,7 @@ export default function Finance() {
       {activeTab === "expenses" && <ExpensesTab t={t} queryClient={queryClient} />}
       {activeTab === "income" && <IncomeTab t={t} queryClient={queryClient} />}
       {activeTab === "advances" && <AdvancesTab t={t} queryClient={queryClient} users={users} />}
+      {activeTab === "balance" && <BalanceTab t={t} />}
     </div>
   );
 }
@@ -1117,7 +1121,9 @@ function IncomeTab({ t, queryClient }: { t: (k: string) => string; queryClient: 
 function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; queryClient: ReturnType<typeof useQueryClient>; users: User[] }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState(() => ({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash" }));
+  const [form, setForm] = useState(() => ({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash", receipt_url: "" }));
+  const [receiptUploading, setReceiptUploading] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   const { data: advances = [], isLoading } = useQuery({ queryKey: ["cash-advances"], queryFn: getCashAdvances });
   const { data: balances = [] } = useQuery({ queryKey: ["cash-advance-balances"], queryFn: getCashAdvanceBalances });
@@ -1130,7 +1136,7 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
       queryClient.invalidateQueries({ queryKey: ["cash-advances"] });
       queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
       setModalOpen(false);
-      setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash" });
+      setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash", receipt_url: "" });
     },
     onError: (err: any) => { window.alert(err?.response?.data?.detail || err?.message || "Error"); },
   });
@@ -1200,7 +1206,16 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
                 <Td className="text-xs">
                   {a.payment_source === "ip" ? t("finance.sourceIP") : a.payment_source === "card" ? t("finance.sourceCard") : t("finance.sourceCash")}
                 </Td>
-                <Td className="text-sm text-gray-400">{a.note || "\u2014"}</Td>
+                <Td className="text-sm text-gray-400">
+                  <div>
+                    {a.note || "\u2014"}
+                    {a.receipt_url && (
+                      <a href={a.receipt_url} target="_blank" rel="noreferrer" className="text-xs text-blue-400 ml-2">
+                        {t("expenses.viewReceipt")}
+                      </a>
+                    )}
+                  </div>
+                </Td>
                 <Td>{format(parseISO(a.date), "d MMM yyyy", { locale: ru })}</Td>
                 <Td>
                   <button
@@ -1238,10 +1253,43 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
             value={form.payment_source}
             onChange={(e) => setForm({ ...form, payment_source: e.target.value })}
           />
+          {/* Receipt upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{t("expenses.receipt")}</label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => receiptInputRef.current?.click()}
+                disabled={receiptUploading}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm glass-input text-gray-400 hover:text-purple-200 transition-colors disabled:opacity-50"
+              >
+                {receiptUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+                {t("expenses.uploadReceipt")}
+              </button>
+              {form.receipt_url && (
+                <span className="text-xs text-green-400">{t("expenses.receiptUploaded")}</span>
+              )}
+            </div>
+            <input ref={receiptInputRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setReceiptUploading(true);
+              try {
+                const result = await uploadFile(file);
+                setForm((prev) => ({ ...prev, receipt_url: result.url }));
+              } catch (err: any) {
+                window.alert(err?.response?.data?.detail || "Upload failed");
+              } finally {
+                setReceiptUploading(false);
+                if (receiptInputRef.current) receiptInputRef.current.value = "";
+              }
+            }} />
+          </div>
+
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
             <Button
-              onClick={() => createMut.mutate({ user_id: Number(form.user_id), amount: Number(form.amount), note: form.note || undefined, date: form.date, payment_source: form.payment_source })}
+              onClick={() => createMut.mutate({ user_id: Number(form.user_id), amount: Number(form.amount), note: form.note || undefined, date: form.date, payment_source: form.payment_source, receipt_url: form.receipt_url || undefined })}
               loading={createMut.isPending}
               disabled={!form.user_id || !form.amount}
             >
@@ -1258,6 +1306,136 @@ function AdvancesTab({ t, queryClient, users }: { t: (k: string) => string; quer
         isPending={deleteMut.isPending}
         t={t}
       />
+    </div>
+  );
+}
+
+/* ── BalanceTab ──────────────────────────────────────────────────── */
+
+const PERIODS = [
+  { id: "day", label: "finance.periodDay" },
+  { id: "week", label: "finance.periodWeek" },
+  { id: "month", label: "finance.periodMonth" },
+  { id: "year", label: "finance.periodYear" },
+  { id: "all", label: "finance.periodAll" },
+] as const;
+
+const SOURCE_CONFIG: Record<string, { icon: typeof Banknote; color: string; bgColor: string }> = {
+  cash: { icon: Banknote, color: "text-green-400", bgColor: "bg-green-500/10" },
+  ip: { icon: Building2, color: "text-blue-400", bgColor: "bg-blue-500/10" },
+  card: { icon: CreditCard, color: "text-purple-400", bgColor: "bg-purple-500/10" },
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  cash: "finance.sourceCash",
+  ip: "finance.sourceIP",
+  card: "finance.sourceCard",
+};
+
+function BalanceTab({ t }: { t: (k: string) => string }) {
+  const [period, setPeriod] = useState("month");
+
+  const { data, isLoading } = useQuery<BalanceResponse>({
+    queryKey: ["finance-balance", period],
+    queryFn: () => getFinanceBalance(period),
+  });
+
+  if (isLoading) return <LoadingSpinner />;
+  if (!data) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Period filter pills */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {PERIODS.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setPeriod(p.id)}
+            className={`text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+              period === p.id
+                ? "bg-blue-500/15 text-blue-400 font-medium"
+                : "text-gray-500 hover:bg-white/10"
+            }`}
+          >
+            {t(p.label)}
+          </button>
+        ))}
+      </div>
+
+      {/* Source breakdown cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {data.sources.map((src) => {
+          const cfg = SOURCE_CONFIG[src.source] || SOURCE_CONFIG.cash;
+          const Icon = cfg.icon;
+          return (
+            <div key={src.source} className="glass-card rounded-xl p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`p-2.5 rounded-lg ${cfg.bgColor}`}>
+                  <Icon size={22} className={cfg.color} />
+                </div>
+                <span className={`text-lg font-semibold ${cfg.color}`}>
+                  {t(SOURCE_LABELS[src.source] || src.source)}
+                </span>
+              </div>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <TrendingUp size={14} className="text-green-400" />
+                    {t("finance.balanceIncome")}
+                  </div>
+                  <span className="text-sm font-medium text-green-400">+{formatMoney(src.income)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <TrendingDown size={14} className="text-red-400" />
+                    {t("finance.balanceExpenses")}
+                  </div>
+                  <span className="text-sm font-medium text-red-400">-{formatMoney(src.expenses)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <Wallet size={14} className="text-orange-400" />
+                    {t("finance.balancePayroll")}
+                  </div>
+                  <span className="text-sm font-medium text-orange-400">-{formatMoney(src.payroll)}</span>
+                </div>
+                <div className="border-t border-white/[0.06] pt-3 flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-300">{t("finance.balanceNet")}</span>
+                  <span className={`text-lg font-bold ${src.balance >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {formatMoney(src.balance)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Total balance card */}
+      <div className="glass-card rounded-xl p-6 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 border border-white/[0.08]">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="text-sm text-gray-400 mb-1">{t("finance.totalBalance")}</div>
+            <div className={`text-3xl font-bold ${data.total_balance >= 0 ? "text-green-400" : "text-red-400"}`}>
+              {formatMoney(data.total_balance)}
+            </div>
+          </div>
+          <div className="flex gap-6 text-sm">
+            <div>
+              <div className="text-gray-500">{t("finance.balanceIncome")}</div>
+              <div className="text-green-400 font-medium">+{formatMoney(data.total_income)}</div>
+            </div>
+            <div>
+              <div className="text-gray-500">{t("finance.balanceExpenses")}</div>
+              <div className="text-red-400 font-medium">-{formatMoney(data.total_expenses)}</div>
+            </div>
+            <div>
+              <div className="text-gray-500">{t("finance.balancePayroll")}</div>
+              <div className="text-orange-400 font-medium">-{formatMoney(data.total_payroll)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

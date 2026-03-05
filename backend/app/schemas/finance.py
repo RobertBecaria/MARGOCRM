@@ -186,6 +186,14 @@ class CashAdvanceCreate(BaseModel):
     note: Optional[str] = None
     date: dt.date
     payment_source: VALID_PAYMENT_SOURCES = "cash"
+    receipt_url: Optional[str] = None
+
+    @field_validator("receipt_url")
+    @classmethod
+    def validate_receipt_url(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.startswith(("https://", "http://", "/api/uploads/")):
+            raise ValueError("receipt_url must be an HTTP(S) URL or an internal upload path")
+        return v
 
 
 class CashAdvanceResponse(BaseModel):
@@ -196,6 +204,7 @@ class CashAdvanceResponse(BaseModel):
     note: Optional[str] = None
     date: dt.date
     payment_source: Optional[VALID_PAYMENT_SOURCES] = "cash"
+    receipt_url: Optional[str] = None
     created_by: int
     created_at: dt.datetime
 
@@ -238,3 +247,21 @@ class AutoPayrollEntry(BaseModel):
 
 class AutoPayrollRequest(BaseModel):
     entries: list[AutoPayrollEntry]
+
+
+class SourceBreakdown(BaseModel):
+    source: str
+    income: float
+    expenses: float
+    payroll: float
+    balance: float
+
+
+class BalanceResponse(BaseModel):
+    sources: list[SourceBreakdown]
+    total_income: float
+    total_expenses: float
+    total_payroll: float
+    total_balance: float
+    period_start: Optional[dt.date] = None
+    period_end: Optional[dt.date] = None

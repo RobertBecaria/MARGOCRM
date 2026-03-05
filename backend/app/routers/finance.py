@@ -12,6 +12,7 @@ from app.models.user import RoleEnum, User
 from app.schemas.finance import (
     AutoIncomeRequest,
     AutoPayrollRequest,
+    BalanceResponse,
     CashAdvanceBalance,
     CashAdvanceCreate,
     CashAdvanceResponse,
@@ -28,6 +29,7 @@ from app.schemas.finance import (
     PayrollCreate,
     PayrollResponse,
     PayrollUpdate,
+    SourceBreakdown,
 )
 from app.services.auth import get_current_user
 
@@ -399,6 +401,97 @@ def cash_advance_balances(
         ))
 
     return result
+
+
+# --- Balance ---
+
+@router.get("/finance/balance", response_model=BalanceResponse)
+def finance_balance(
+    period: str = Query("month", description="day|week|month|year|all"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
+):
+    today = dt.date.today()
+    period_start = None
+    period_end = today
+
+    if period == "day":
+        period_start = today
+    elif period == "week":
+        period_start = today - dt.timedelta(days=today.weekday())
+    elif period == "month":
+        period_start = today.replace(day=1)
+    elif period == "year":
+        period_start = today.replace(month=1, day=1)
+    # period == "all" → no date filter
+
+    def date_filter(query, date_col):
+        if period_start:
+            query = query.filter(date_col >= period_start)
+        query = query.filter(date_col <= period_end)
+        return query
+
+    # Income by payment_source
+    inc_q = date_filter(
+        db.query(
+            func.coalesce(Income.payment_source, "cash"),
+            func.coalesce(func.sum(Income.amount), 0),
+        ),
+        Income.date,
+    ).group_by(Income.payment_source)
+    inc_map = {src or "cash": float(amt) for src, amt in inc_q.all()}
+
+    # Expenses by payment_source (approved only)
+    exp_q = date_filter(
+        db.query(
+            func.coalesce(Expense.payment_source, "cash"),
+            func.coalesce(func.sum(Expense.amount), 0),
+        ).filter(Expense.status == "approved"),
+        Expense.date,
+    ).group_by(Expense.payment_source)
+    exp_map = {src or "cash": float(amt) for src, amt in exp_q.all()}
+
+    # Payroll by payment_source
+    pay_q = date_filter(
+        db.query(
+            func.coalesce(Payroll.payment_source, "cash"),
+            func.coalesce(func.sum(Payroll.net_amount), 0),
+        ),
+        Payroll.period_end,
+    ).group_by(Payroll.payment_source)
+    pay_map = {src or "cash": float(amt) for src, amt in pay_q.all()}
+
+    all_sources = set(inc_map) | set(exp_map) | set(pay_map)
+    # Always show all 3 sources
+    for s in ("cash", "ip", "card"):
+        all_sources.add(s)
+
+    sources = []
+    total_inc = total_exp = total_pay = 0.0
+    for src in ("cash", "ip", "card"):
+        i = inc_map.get(src, 0)
+        e = exp_map.get(src, 0)
+        p = pay_map.get(src, 0)
+        total_inc += i
+        total_exp += e
+        total_pay += p
+        sources.append(SourceBreakdown(
+            source=src,
+            income=i,
+            expenses=e,
+            payroll=p,
+            balance=i - e - p,
+        ))
+
+    return BalanceResponse(
+        sources=sources,
+        total_income=total_inc,
+        total_expenses=total_exp,
+        total_payroll=total_pay,
+        total_balance=total_inc - total_exp - total_pay,
+        period_start=period_start,
+        period_end=period_end,
+    )
 
 
 # --- Summary ---

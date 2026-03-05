@@ -88,6 +88,7 @@ export interface CashAdvance {
   note: string | null;
   date: string;
   payment_source: string | null;
+  receipt_url: string | null;
   created_by: number;
   created_at: string;
 }
