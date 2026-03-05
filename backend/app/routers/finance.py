@@ -461,15 +461,47 @@ def finance_balance(
     ).group_by(Payroll.payment_source)
     pay_map = {src or "cash": float(amt) for src, amt in pay_q.all()}
 
-    # Cash advances by payment_source
-    adv_q = date_filter(
+    # Cash advances remaining (given - spent) by payment_source
+    # Total advances given, grouped by payment_source
+    adv_given_q = date_filter(
         db.query(
             func.coalesce(CashAdvance.payment_source, "cash"),
+            CashAdvance.user_id,
             func.coalesce(func.sum(CashAdvance.amount), 0),
         ),
         CashAdvance.date,
-    ).group_by(CashAdvance.payment_source)
-    adv_map = {src or "cash": float(amt) for src, amt in adv_q.all()}
+    ).group_by(CashAdvance.payment_source, CashAdvance.user_id)
+    # {(source, user_id): amount_given}
+    adv_given = {}
+    adv_user_ids = set()
+    for src, uid, amt in adv_given_q.all():
+        key = (src or "cash", uid)
+        adv_given[key] = adv_given.get(key, 0) + float(amt)
+        adv_user_ids.add(uid)
+
+    # Total approved expenses by advance users (all-time, not period-filtered)
+    adv_spent_map: dict[int, float] = {}
+    if adv_user_ids:
+        spent_q = (
+            db.query(Expense.created_by, func.coalesce(func.sum(Expense.amount), 0))
+            .filter(Expense.status == "approved", Expense.created_by.in_(adv_user_ids))
+            .group_by(Expense.created_by)
+            .all()
+        )
+        adv_spent_map = {uid: float(amt) for uid, amt in spent_q}
+
+    # Remaining per source: advance given minus what that user spent
+    adv_map: dict[str, float] = {}
+    for (src, uid), given in adv_given.items():
+        spent = adv_spent_map.get(uid, 0)
+        # Distribute spent proportionally if user has advances from multiple sources
+        user_total_given = sum(v for (s, u), v in adv_given.items() if u == uid)
+        if user_total_given > 0:
+            remaining = given - spent * (given / user_total_given)
+        else:
+            remaining = given
+        if remaining > 0:
+            adv_map[src] = adv_map.get(src, 0) + remaining
 
     sources = []
     total_inc = total_exp = total_pay = total_adv = 0.0
