@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins } from "lucide-react";
+import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins, CalendarDays } from "lucide-react";
 import { format, parseISO, addDays, differenceInDays, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -101,11 +101,11 @@ function DeleteConfirmModal({ open, onClose, onConfirm, isPending, t }: {
 /* ── Tabs config ─────────────────────────────────────────────────── */
 
 const tabs = [
+  { id: "balance", label: "finance.balanceTab" },
   { id: "income", label: "finance.income" },
   { id: "expenses", label: "finance.expenses" },
   { id: "payroll", label: "finance.payroll" },
   { id: "advances", label: "finance.advances" },
-  { id: "balance", label: "finance.balanceTab" },
 ] as const;
 
 type TabId = (typeof tabs)[number]["id"];
@@ -115,7 +115,7 @@ type TabId = (typeof tabs)[number]["id"];
 export default function Finance() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabId>("income");
+  const [activeTab, setActiveTab] = useState<TabId>("balance");
 
   // Shared users query – passed down to PayrollTab & AdvancesTab
   const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
@@ -1334,23 +1334,41 @@ const SOURCE_LABELS: Record<string, string> = {
 
 function BalanceTab({ t }: { t: (k: string) => string }) {
   const [period, setPeriod] = useState("month");
+  const [customMonth, setCustomMonth] = useState("");
+  const monthInputRef = useRef<HTMLInputElement>(null);
+
+  // Compute start/end for custom month
+  const customStart = customMonth ? `${customMonth}-01` : undefined;
+  const customEnd = customMonth
+    ? format(endOfMonth(parseISO(`${customMonth}-01`)), "yyyy-MM-dd")
+    : undefined;
 
   const { data, isLoading } = useQuery<BalanceResponse>({
-    queryKey: ["finance-balance", period],
-    queryFn: () => getFinanceBalance(period),
+    queryKey: ["finance-balance", period, customStart, customEnd],
+    queryFn: () => getFinanceBalance(period, customStart, customEnd),
   });
+
+  function handleMonthChange(value: string) {
+    setCustomMonth(value);
+    setPeriod("custom");
+  }
+
+  function handlePeriodClick(id: string) {
+    setPeriod(id);
+    setCustomMonth("");
+  }
 
   if (isLoading) return <LoadingSpinner />;
   if (!data) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
 
   return (
     <div className="space-y-6">
-      {/* Period filter pills */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      {/* Period filter pills + calendar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {PERIODS.map((p) => (
           <button
             key={p.id}
-            onClick={() => setPeriod(p.id)}
+            onClick={() => handlePeriodClick(p.id)}
             className={`text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
               period === p.id
                 ? "bg-blue-500/15 text-blue-400 font-medium"
@@ -1360,6 +1378,28 @@ function BalanceTab({ t }: { t: (k: string) => string }) {
             {t(p.label)}
           </button>
         ))}
+        <div className="relative">
+          <button
+            onClick={() => monthInputRef.current?.showPicker()}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+              period === "custom"
+                ? "bg-blue-500/15 text-blue-400 font-medium"
+                : "text-gray-500 hover:bg-white/10"
+            }`}
+          >
+            <CalendarDays size={14} />
+            {customMonth
+              ? format(parseISO(`${customMonth}-01`), "LLLL yyyy", { locale: ru })
+              : t("finance.pickMonth")}
+          </button>
+          <input
+            ref={monthInputRef}
+            type="month"
+            value={customMonth}
+            onChange={(e) => handleMonthChange(e.target.value)}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+          />
+        </div>
       </div>
 
       {/* Source breakdown cards */}

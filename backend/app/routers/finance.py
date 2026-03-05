@@ -407,7 +407,9 @@ def cash_advance_balances(
 
 @router.get("/finance/balance", response_model=BalanceResponse)
 def finance_balance(
-    period: str = Query("month", description="day|week|month|year|all"),
+    period: str = Query("month", description="day|week|month|year|all|custom"),
+    start: Optional[dt.date] = Query(None),
+    end: Optional[dt.date] = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(RoleEnum.owner, RoleEnum.manager)),
 ):
@@ -415,7 +417,10 @@ def finance_balance(
     period_start = None
     period_end = today
 
-    if period == "day":
+    if period == "custom" and start and end:
+        period_start = start
+        period_end = end
+    elif period == "day":
         period_start = today
     elif period == "week":
         period_start = today - dt.timedelta(days=today.weekday())

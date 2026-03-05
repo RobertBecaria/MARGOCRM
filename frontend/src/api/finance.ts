@@ -202,8 +202,11 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
   return response.data;
 }
 
-export async function getFinanceBalance(period: string = "month"): Promise<BalanceResponse> {
-  const response = await client.get<BalanceResponse>("/finance/balance", { params: { period } });
+export async function getFinanceBalance(period: string = "month", start?: string, end?: string): Promise<BalanceResponse> {
+  const params: Record<string, string> = { period };
+  if (start) params.start = start;
+  if (end) params.end = end;
+  const response = await client.get<BalanceResponse>("/finance/balance", { params });
   return response.data;
 }
 

@@ -159,7 +159,8 @@
     "balancePayroll": "Зарплаты",
     "balanceAdvances": "Авансы",
     "balanceNet": "Баланс",
-    "totalBalance": "Общий баланс"
+    "totalBalance": "Общий баланс",
+    "pickMonth": "Выбрать месяц"
   },
   "ai": {
     "title": "Лия",
