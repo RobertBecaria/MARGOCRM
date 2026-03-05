@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins } from "lucide-react";
 import { format, parseISO, addDays, differenceInDays, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
@@ -1399,6 +1399,13 @@ function BalanceTab({ t }: { t: (k: string) => string }) {
                   </div>
                   <span className="text-sm font-medium text-orange-400">-{formatMoney(src.payroll)}</span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <HandCoins size={14} className="text-yellow-400" />
+                    {t("finance.balanceAdvances")}
+                  </div>
+                  <span className="text-sm font-medium text-yellow-400">-{formatMoney(src.advances)}</span>
+                </div>
                 <div className="border-t border-white/[0.06] pt-3 flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-300">{t("finance.balanceNet")}</span>
                   <span className={`text-lg font-bold ${src.balance >= 0 ? "text-green-400" : "text-red-400"}`}>
@@ -1432,6 +1439,10 @@ function BalanceTab({ t }: { t: (k: string) => string }) {
             <div>
               <div className="text-gray-500">{t("finance.balancePayroll")}</div>
               <div className="text-orange-400 font-medium">-{formatMoney(data.total_payroll)}</div>
+            </div>
+            <div>
+              <div className="text-gray-500">{t("finance.balanceAdvances")}</div>
+              <div className="text-yellow-400 font-medium">-{formatMoney(data.total_advances)}</div>
             </div>
           </div>
         </div>

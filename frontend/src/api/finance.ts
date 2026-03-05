@@ -182,6 +182,7 @@ export interface SourceBreakdown {
   income: number;
   expenses: number;
   payroll: number;
+  advances: number;
   balance: number;
 }
 
@@ -190,6 +191,7 @@ export interface BalanceResponse {
   total_income: number;
   total_expenses: number;
   total_payroll: number;
+  total_advances: number;
   total_balance: number;
   period_start: string | null;
   period_end: string | null;

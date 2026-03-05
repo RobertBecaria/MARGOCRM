@@ -461,26 +461,34 @@ def finance_balance(
     ).group_by(Payroll.payment_source)
     pay_map = {src or "cash": float(amt) for src, amt in pay_q.all()}
 
-    all_sources = set(inc_map) | set(exp_map) | set(pay_map)
-    # Always show all 3 sources
-    for s in ("cash", "ip", "card"):
-        all_sources.add(s)
+    # Cash advances by payment_source
+    adv_q = date_filter(
+        db.query(
+            func.coalesce(CashAdvance.payment_source, "cash"),
+            func.coalesce(func.sum(CashAdvance.amount), 0),
+        ),
+        CashAdvance.date,
+    ).group_by(CashAdvance.payment_source)
+    adv_map = {src or "cash": float(amt) for src, amt in adv_q.all()}
 
     sources = []
-    total_inc = total_exp = total_pay = 0.0
+    total_inc = total_exp = total_pay = total_adv = 0.0
     for src in ("cash", "ip", "card"):
         i = inc_map.get(src, 0)
         e = exp_map.get(src, 0)
         p = pay_map.get(src, 0)
+        a = adv_map.get(src, 0)
         total_inc += i
         total_exp += e
         total_pay += p
+        total_adv += a
         sources.append(SourceBreakdown(
             source=src,
             income=i,
             expenses=e,
             payroll=p,
-            balance=i - e - p,
+            advances=a,
+            balance=i - e - p - a,
         ))
 
     return BalanceResponse(
@@ -488,7 +496,8 @@ def finance_balance(
         total_income=total_inc,
         total_expenses=total_exp,
         total_payroll=total_pay,
-        total_balance=total_inc - total_exp - total_pay,
+        total_advances=total_adv,
+        total_balance=total_inc - total_exp - total_pay - total_adv,
         period_start=period_start,
         period_end=period_end,
     )

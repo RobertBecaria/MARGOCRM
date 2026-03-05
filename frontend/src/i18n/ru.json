@@ -157,6 +157,7 @@
     "balanceIncome": "Доходы",
     "balanceExpenses": "Расходы",
     "balancePayroll": "Зарплаты",
+    "balanceAdvances": "Авансы",
     "balanceNet": "Баланс",
     "totalBalance": "Общий баланс"
   },

@@ -254,6 +254,7 @@ class SourceBreakdown(BaseModel):
     income: float
     expenses: float
     payroll: float
+    advances: float
     balance: float
 
 
@@ -262,6 +263,7 @@ class BalanceResponse(BaseModel):
     total_income: float
     total_expenses: float
     total_payroll: float
+    total_advances: float
     total_balance: float
     period_start: Optional[dt.date] = None
     period_end: Optional[dt.date] = None
