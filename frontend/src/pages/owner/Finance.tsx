@@ -418,7 +418,7 @@ function PayrollTab({ t, queryClient, users }: { t: (k: string) => string; query
                     <button
                       onClick={() => togglePaidMut.mutate({ id: r.id, paid: r.status !== "paid" })}
                       className="cursor-pointer"
-                      disabled={togglePaidMut.isPending}
+                      disabled={togglePaidMut.isPending && togglePaidMut.variables?.id === r.id}
                     >
                       <Badge color={r.status === "paid" ? "green" : "orange"}>
                         {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
