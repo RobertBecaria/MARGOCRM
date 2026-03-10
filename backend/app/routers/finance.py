@@ -456,13 +456,13 @@ def finance_balance(
     ).group_by(Expense.payment_source)
     exp_map = {src or "cash": float(amt) for src, amt in exp_q.all()}
 
-    # Payroll by payment_source (paid only — pending hasn't left the account yet)
+    # Payroll by payment_source (paid only, filtered by paid_date — the actual cash-out date)
     pay_q = date_filter(
         db.query(
             func.coalesce(Payroll.payment_source, "cash"),
             func.coalesce(func.sum(Payroll.net_amount), 0),
-        ).filter(Payroll.status == "paid"),
-        Payroll.period_end,
+        ).filter(Payroll.status == "paid", Payroll.paid_date.isnot(None)),
+        Payroll.paid_date,
     ).group_by(Payroll.payment_source)
     pay_map = {src or "cash": float(amt) for src, amt in pay_q.all()}
 
