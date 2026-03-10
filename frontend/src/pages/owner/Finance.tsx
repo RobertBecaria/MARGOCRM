@@ -1278,10 +1278,6 @@ function AdvancesTab({ users }: { users: User[] }) {
 
 const PERIODS = [
   { id: "all", label: "finance.periodAll" },
-  { id: "day", label: "finance.periodDay" },
-  { id: "week", label: "finance.periodWeek" },
-  { id: "month", label: "finance.periodMonth" },
-  { id: "year", label: "finance.periodYear" },
 ] as const;
 
 const SOURCE_CONFIG: Record<string, { icon: typeof Banknote; color: string; bgColor: string }> = {
