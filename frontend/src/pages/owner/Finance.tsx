@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Check, Pencil, Trash2, X, Camera, Loader2, Banknote, Building2, CreditCard, RefreshCw, TrendingUp, TrendingDown, Wallet, HandCoins, CalendarDays, ChevronLeft, ChevronRight, DollarSign, Receipt } from "lucide-react";
@@ -1277,11 +1277,11 @@ function AdvancesTab({ users }: { users: User[] }) {
 /* ── BalanceTab ──────────────────────────────────────────────────── */
 
 const PERIODS = [
+  { id: "all", label: "finance.periodAll" },
   { id: "day", label: "finance.periodDay" },
   { id: "week", label: "finance.periodWeek" },
   { id: "month", label: "finance.periodMonth" },
   { id: "year", label: "finance.periodYear" },
-  { id: "all", label: "finance.periodAll" },
 ] as const;
 
 const SOURCE_CONFIG: Record<string, { icon: typeof Banknote; color: string; bgColor: string }> = {
@@ -1302,11 +1302,10 @@ const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
 
 function BalanceTab() {
   const { t } = useTranslation();
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod] = useState("all");
   const [customMonth, setCustomMonth] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(new Date().getFullYear());
-  const pickerRef = useRef<HTMLDivElement>(null);
 
   // Compute start/end for custom month
   const customStart = customMonth ? `${customMonth}-01` : undefined;
@@ -1329,20 +1328,7 @@ function BalanceTab() {
   function handlePeriodClick(id: string) {
     setPeriod(id);
     setCustomMonth("");
-    setPickerOpen(false);
   }
-
-  // Close picker on outside click
-  useEffect(() => {
-    if (!pickerOpen) return;
-    function onClickOutside(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, [pickerOpen]);
 
   if (isLoading) return <LoadingSpinner />;
   if (!data) return <div className="text-center py-8 text-gray-500">{t("finance.noData")}</div>;
@@ -1364,54 +1350,54 @@ function BalanceTab() {
             {t(p.label)}
           </button>
         ))}
-        <div className="relative" ref={pickerRef}>
-          <button
-            onClick={() => { setPickerOpen(!pickerOpen); setPickerYear(customMonth ? parseInt(customMonth.split("-")[0]) : new Date().getFullYear()); }}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
-              period === "custom"
-                ? "bg-blue-500/15 text-blue-400 font-medium"
-                : "text-gray-500 hover:bg-white/10"
-            }`}
-          >
-            <CalendarDays size={14} />
-            {customMonth
-              ? format(parseISO(`${customMonth}-01`), "LLLL yyyy", { locale: ru })
-              : t("finance.pickMonth")}
-          </button>
-          {pickerOpen && (
-            <div className="absolute top-full left-0 mt-2 z-50 glass-card rounded-xl p-3 shadow-xl border border-white/10 w-64">
-              <div className="flex items-center justify-between mb-3">
-                <button onClick={() => setPickerYear(y => y - 1)} className="p-1 rounded hover:bg-white/10 text-gray-400">
-                  <ChevronLeft size={16} />
-                </button>
-                <span className="text-sm font-medium text-white">{pickerYear}</span>
-                <button onClick={() => setPickerYear(y => y + 1)} className="p-1 rounded hover:bg-white/10 text-gray-400">
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                {MONTH_NAMES.map((name, i) => {
-                  const val = `${pickerYear}-${String(i + 1).padStart(2, "0")}`;
-                  const isSelected = customMonth === val;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleMonthSelect(i)}
-                      className={`text-xs py-1.5 px-1 rounded-lg transition-colors ${
-                        isSelected
-                          ? "bg-blue-500/20 text-blue-400 font-medium"
-                          : "text-gray-400 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      {name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+        <button
+          onClick={() => { setPickerOpen(true); setPickerYear(customMonth ? parseInt(customMonth.split("-")[0]) : new Date().getFullYear()); }}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ${
+            period === "custom"
+              ? "bg-blue-500/15 text-blue-400 font-medium"
+              : "text-gray-500 hover:bg-white/10"
+          }`}
+        >
+          <CalendarDays size={14} />
+          {customMonth
+            ? format(parseISO(`${customMonth}-01`), "LLLL yyyy", { locale: ru })
+            : t("finance.pickMonth")}
+        </button>
       </div>
+
+      {/* Month picker modal */}
+      <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title={t("finance.pickMonth")}>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <button onClick={() => setPickerYear(y => y - 1)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400">
+              <ChevronLeft size={20} />
+            </button>
+            <span className="text-lg font-semibold text-white">{pickerYear}</span>
+            <button onClick={() => setPickerYear(y => y + 1)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {MONTH_NAMES.map((name, i) => {
+              const val = `${pickerYear}-${String(i + 1).padStart(2, "0")}`;
+              const isSelected = customMonth === val;
+              return (
+                <button
+                  key={i}
+                  onClick={() => handleMonthSelect(i)}
+                  className={`py-3 px-2 rounded-xl text-sm font-medium transition-colors ${
+                    isSelected
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white glass-card"
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </Modal>
 
       {/* Source breakdown cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
