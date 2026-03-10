@@ -2,6 +2,16 @@ import { create } from "zustand";
 import * as authApi from "../api/auth";
 import type { AuthTokens, User } from "../types";
 
+function safeJsonParse<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    localStorage.removeItem(key);
+    return fallback;
+  }
+}
+
 interface AuthState {
   user: User | null;
   tokens: AuthTokens | null;
@@ -13,8 +23,8 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: JSON.parse(localStorage.getItem("user") || "null"),
-  tokens: JSON.parse(localStorage.getItem("tokens") || "null"),
+  user: safeJsonParse<User | null>("user", null),
+  tokens: safeJsonParse<AuthTokens | null>("tokens", null),
   isLoading: false,
 
   login: async (email: string, password: string) => {
@@ -48,7 +58,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await authApi.getMe();
       localStorage.setItem("user", JSON.stringify(user));
       set({ user, isLoading: false });
-    } catch {
+    } catch (error) {
+      console.error("[authStore] loadUser failed:", error);
       set({ isLoading: false });
     }
   },

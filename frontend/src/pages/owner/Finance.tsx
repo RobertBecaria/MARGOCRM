@@ -13,11 +13,12 @@ import {
 } from "../../api/finance";
 import type { BalanceResponse } from "../../api/finance";
 import { getUsers } from "../../api/users";
-import type { PayrollStatus, User } from "../../types";
+import type { PayrollStatus } from "../../types";
 import { getCategories } from "../../api/categories";
 import { formatMoney } from "../../utils/formatters";
 import { PAYMENT_SOURCE_OPTIONS } from "../../utils/constants";
 import { toast } from "../../components/ui/Toast";
+import { getApiError } from "../../utils/errors";
 import { useReceiptUpload } from "../../hooks/useReceiptUpload";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -118,9 +119,6 @@ export default function Finance() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabId>("balance");
 
-  // Shared users query – passed down to PayrollTab & AdvancesTab
-  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -156,10 +154,10 @@ export default function Finance() {
         ))}
       </div>
 
-      {activeTab === "payroll" && <PayrollTab users={users} />}
+      {activeTab === "payroll" && <PayrollTab />}
       {activeTab === "expenses" && <ExpensesTab />}
       {activeTab === "income" && <IncomeTab />}
-      {activeTab === "advances" && <AdvancesTab users={users} />}
+      {activeTab === "advances" && <AdvancesTab />}
       {activeTab === "balance" && <BalanceTab />}
     </div>
   );
@@ -167,7 +165,7 @@ export default function Finance() {
 
 /* ── PayrollTab ──────────────────────────────────────────────────── */
 
-function PayrollTab({ users }: { users: User[] }) {
+function PayrollTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
@@ -180,7 +178,9 @@ function PayrollTab({ users }: { users: User[] }) {
   const [globalStart, setGlobalStart] = useState("");
   const [globalEnd, setGlobalEnd] = useState("");
   const [periodFilter, setPeriodFilter] = useState("all");
+  const [togglingIds, setTogglingIds] = useState<Set<number>>(() => new Set());
 
+  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
   const { data: records = [], isLoading } = useQuery({ queryKey: ["payroll"], queryFn: () => getPayroll() });
   const staffList = useMemo(() => users.filter((u) => u.role !== "owner"), [users]);
   const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
@@ -188,13 +188,13 @@ function PayrollTab({ users }: { users: User[] }) {
   const createMut = useMutation({
     mutationFn: createPayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updatePayroll>[1] }) => updatePayroll(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); closeModal(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const togglePaidMut = useMutation({
@@ -202,20 +202,24 @@ function PayrollTab({ users }: { users: User[] }) {
       updatePayroll(id, paid
         ? { status: "paid" as PayrollStatus, paid_date: format(new Date(), "yyyy-MM-dd") }
         : { status: "pending" as PayrollStatus, paid_date: undefined }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["payroll"] }),
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onMutate: ({ id }) => { setTogglingIds((prev) => new Set(prev).add(id)); },
+    onSettled: (_d, _e, { id }) => {
+      setTogglingIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+      queryClient.invalidateQueries({ queryKey: ["payroll"] });
+    },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deletePayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setConfirmDeleteId(null); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const autoMut = useMutation({
     mutationFn: autoGeneratePayroll,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["payroll"] }); setAutoModalOpen(false); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const autoRows = useMemo(() => {
@@ -436,7 +440,7 @@ function PayrollTab({ users }: { users: User[] }) {
                     <button
                       onClick={() => togglePaidMut.mutate({ id: r.id, paid: r.status !== "paid" })}
                       className="cursor-pointer"
-                      disabled={togglePaidMut.isPending && togglePaidMut.variables?.id === r.id}
+                      disabled={togglingIds.has(r.id)}
                     >
                       <Badge color={r.status === "paid" ? "green" : "orange"}>
                         {r.status === "paid" ? t("finance.paid") : t("finance.pendingPayment")}
@@ -610,19 +614,19 @@ function ExpensesTab() {
   const createMut = useMutation({
     mutationFn: createExpense,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateExpense>[1] }) => updateExpense(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteExpense,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["expenses"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const approveMut = useMutation({
@@ -631,7 +635,7 @@ function ExpensesTab() {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
     },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   function closeModal() {
@@ -820,25 +824,25 @@ function IncomeTab() {
   const createMut = useMutation({
     mutationFn: createIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Parameters<typeof updateIncome>[1] }) => updateIncome(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); closeModal(); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); queryClient.invalidateQueries({ queryKey: ["finance-summary"] }); setConfirmDeleteId(null); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const autoMut = useMutation({
     mutationFn: autoGenerateIncome,
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["income"] }); setAutoModalOpen(false); },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const recurringRows = useMemo(() => {
@@ -1099,7 +1103,7 @@ function IncomeTab() {
 
 /* ── AdvancesTab ─────────────────────────────────────────────────── */
 
-function AdvancesTab({ users }: { users: User[] }) {
+function AdvancesTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
@@ -1107,6 +1111,7 @@ function AdvancesTab({ users }: { users: User[] }) {
   const [form, setForm] = useState(() => ({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash", receipt_url: "" }));
   const receipt = useReceiptUpload();
 
+  const { data: users = [] } = useQuery({ queryKey: ["users"], queryFn: () => getUsers() });
   const { data: advances = [], isLoading } = useQuery({ queryKey: ["cash-advances"], queryFn: getCashAdvances });
   const { data: balances = [] } = useQuery({ queryKey: ["cash-advance-balances"], queryFn: getCashAdvanceBalances });
   const staffList = useMemo(() => users.filter((u) => u.role !== "owner"), [users]);
@@ -1120,7 +1125,7 @@ function AdvancesTab({ users }: { users: User[] }) {
       setModalOpen(false);
       setForm({ user_id: "", amount: "", note: "", date: format(new Date(), "yyyy-MM-dd"), payment_source: "cash", receipt_url: "" });
     },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
 
   const deleteMut = useMutation({
@@ -1130,8 +1135,23 @@ function AdvancesTab({ users }: { users: User[] }) {
       queryClient.invalidateQueries({ queryKey: ["cash-advance-balances"] });
       setConfirmDeleteId(null);
     },
-    onError: (err: any) => { toast.error(err?.response?.data?.detail || err?.message || t("common.error")); },
+    onError: (err: unknown) => { toast.error(getApiError(err, t("common.error"))); },
   });
+
+  function handleSubmit() {
+    if (!form.user_id || !form.amount || isNaN(Number(form.amount))) {
+      toast.error(t("finance.fillRequired"));
+      return;
+    }
+    createMut.mutate({
+      user_id: Number(form.user_id),
+      amount: Number(form.amount),
+      note: form.note || undefined,
+      date: form.date,
+      payment_source: form.payment_source,
+      receipt_url: form.receipt_url || undefined,
+    });
+  }
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -1254,7 +1274,7 @@ function AdvancesTab({ users }: { users: User[] }) {
           <div className="flex gap-3 justify-end pt-2">
             <Button variant="secondary" onClick={() => setModalOpen(false)}>{t("common.cancel")}</Button>
             <Button
-              onClick={() => createMut.mutate({ user_id: Number(form.user_id), amount: Number(form.amount), note: form.note || undefined, date: form.date, payment_source: form.payment_source, receipt_url: form.receipt_url || undefined })}
+              onClick={handleSubmit}
               loading={createMut.isPending}
               disabled={!form.user_id || !form.amount}
             >

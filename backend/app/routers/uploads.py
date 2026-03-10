@@ -2,7 +2,7 @@ import os
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from app.models.user import User
@@ -24,11 +24,11 @@ async def upload_file(
 ):
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
-        return {"error": f"File type {ext} not allowed"}
+        raise HTTPException(status_code=400, detail=f"File type {ext} not allowed")
 
     content = await file.read()
     if len(content) > MAX_SIZE:
-        return {"error": "File too large (max 10MB)"}
+        raise HTTPException(status_code=413, detail="File too large (max 10MB)")
 
     filename = f"{uuid.uuid4().hex}{ext}"
     filepath = UPLOAD_DIR / filename
@@ -41,5 +41,5 @@ async def upload_file(
 async def get_file(filename: str):
     filepath = UPLOAD_DIR / filename
     if not filepath.exists():
-        return {"error": "File not found"}
+        raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(filepath)

@@ -15,16 +15,24 @@ interface ToastStore {
   removeToast: (id: string) => void;
 }
 
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
+
 const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
   addToast: (message, type) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    set((s) => ({ toasts: [...s.toasts, { id, message, type }] }));
-    setTimeout(() => {
+    set((s) => ({ toasts: [...s.toasts, { id, message, type }].slice(-5) }));
+    const timer = setTimeout(() => {
+      timers.delete(id);
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
     }, 4000);
+    timers.set(id, timer);
   },
-  removeToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  removeToast: (id) => {
+    const timer = timers.get(id);
+    if (timer) { clearTimeout(timer); timers.delete(id); }
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+  },
 }));
 
 const BORDER_COLOR: Record<ToastType, string> = {

@@ -22,6 +22,20 @@ const MyTasks = lazy(() => import("./pages/staff/MyTasks"));
 const MyPay = lazy(() => import("./pages/staff/MyPay"));
 const AiChat = lazy(() => import("./pages/staff/AiChat"));
 
+function OwnerRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <LoadingSpinner />;
+  if (user.role !== "owner" && user.role !== "manager") return <Navigate to="/my-day" replace />;
+  return <>{children}</>;
+}
+
+function StaffRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <LoadingSpinner />;
+  if (user.role === "owner" || user.role === "manager") return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function LoginRoute() {
   const { isAuthenticated } = useAuth();
   if (isAuthenticated) return <Navigate to="/" replace />;
@@ -54,19 +68,19 @@ function App() {
             <Route path="/register" element={<RegisterRoute />} />
             <Route element={<Layout />}>
               {/* Owner/Manager routes */}
-              <Route path="/" element={<Finance />} />
-              <Route path="/staff" element={<Staff />} />
-              <Route path="/schedules" element={<Schedules />} />
-              <Route path="/tasks" element={<Tasks />} />
-              <Route path="/notes" element={<Notes />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/" element={<OwnerRoute><Finance /></OwnerRoute>} />
+              <Route path="/staff" element={<OwnerRoute><Staff /></OwnerRoute>} />
+              <Route path="/schedules" element={<OwnerRoute><Schedules /></OwnerRoute>} />
+              <Route path="/tasks" element={<OwnerRoute><Tasks /></OwnerRoute>} />
+              <Route path="/notes" element={<OwnerRoute><Notes /></OwnerRoute>} />
+              <Route path="/notifications" element={<OwnerRoute><Notifications /></OwnerRoute>} />
+              <Route path="/settings" element={<OwnerRoute><Settings /></OwnerRoute>} />
               {/* Staff routes */}
-              <Route path="/my-day" element={<MyDay />} />
-              <Route path="/my-schedule" element={<MySchedule />} />
-              <Route path="/my-tasks" element={<MyTasks />} />
-              <Route path="/my-pay" element={<MyPay />} />
-              <Route path="/ai-chat" element={<AiChat />} />
+              <Route path="/my-day" element={<StaffRoute><MyDay /></StaffRoute>} />
+              <Route path="/my-schedule" element={<StaffRoute><MySchedule /></StaffRoute>} />
+              <Route path="/my-tasks" element={<StaffRoute><MyTasks /></StaffRoute>} />
+              <Route path="/my-pay" element={<StaffRoute><MyPay /></StaffRoute>} />
+              <Route path="/ai-chat" element={<StaffRoute><AiChat /></StaffRoute>} />
             </Route>
           </Routes>
         </Suspense>
