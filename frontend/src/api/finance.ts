@@ -78,6 +78,7 @@ export interface FinanceSummary {
   total_income: number;
   total_expenses: number;
   total_payroll: number;
+  total_advances: number;
   balance: number;
   monthly: Array<{ month: string; income: number; expenses: number; payroll: number }>;
   expense_by_category: Array<{ category: string; amount: number }>;

@@ -172,6 +172,7 @@ class FinanceSummary(BaseModel):
     total_payroll: float
     total_expenses: float
     total_income: float
+    total_advances: float = 0
     net: float
     balance: float
     period_start: dt.date

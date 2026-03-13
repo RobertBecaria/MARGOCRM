@@ -446,12 +446,19 @@ def finance_balance(
     ).group_by(Income.payment_source)
     inc_map = {src or "cash": float(amt) for src, amt in inc_q.all()}
 
-    # Expenses by payment_source (all non-rejected — includes approved + pending)
+    # Collect user IDs that have cash advances (their expenses are covered by the advance)
+    advance_user_ids_q = db.query(CashAdvance.user_id).distinct()
+    advance_user_ids = {row[0] for row in advance_user_ids_q.all()}
+
+    # Expenses by payment_source (approved only, excluding advance-funded users to avoid double-counting)
     exp_q = date_filter(
         db.query(
             func.coalesce(Expense.payment_source, "cash"),
             func.coalesce(func.sum(Expense.amount), 0),
-        ).filter(Expense.status != "rejected"),
+        ).filter(
+            Expense.status == "approved",
+            ~Expense.created_by.in_(advance_user_ids) if advance_user_ids else True,
+        ),
         Expense.date,
     ).group_by(Expense.payment_source)
     exp_map = {src or "cash": float(amt) for src, amt in exp_q.all()}
@@ -526,20 +533,31 @@ def finance_summary(
 
     # All-time totals (no date filter) so dashboard always shows real numbers
     total_payroll = float(
-        db.query(func.coalesce(func.sum(Payroll.net_amount), 0)).scalar()
-    )
-
-    total_expenses = float(
-        db.query(func.coalesce(func.sum(Expense.amount), 0))
-        .filter(Expense.status == "approved")
+        db.query(func.coalesce(func.sum(Payroll.net_amount), 0))
+        .filter(Payroll.status == "paid")
         .scalar()
     )
+
+    total_advances = float(
+        db.query(func.coalesce(func.sum(CashAdvance.amount), 0)).scalar()
+    )
+
+    # Exclude expenses from advance-holding users (already counted via advances)
+    advance_user_ids_q = db.query(CashAdvance.user_id).distinct()
+    advance_user_ids = {row[0] for row in advance_user_ids_q.all()}
+
+    expense_filter = db.query(func.coalesce(func.sum(Expense.amount), 0)).filter(
+        Expense.status == "approved"
+    )
+    if advance_user_ids:
+        expense_filter = expense_filter.filter(~Expense.created_by.in_(advance_user_ids))
+    total_expenses = float(expense_filter.scalar())
 
     total_income = float(
         db.query(func.coalesce(func.sum(Income.amount), 0)).scalar()
     )
 
-    balance = total_income - total_expenses - total_payroll
+    balance = total_income - total_expenses - total_payroll - total_advances
 
     # Monthly breakdown (last 6 months)
     six_months_ago = (today.replace(day=1) - dt.timedelta(days=1)).replace(day=1)
@@ -557,7 +575,7 @@ def finance_summary(
         .all()
     )
 
-    monthly_expenses = (
+    monthly_exp_q = (
         db.query(
             extract("year", Expense.date).label("y"),
             extract("month", Expense.date).label("m"),
@@ -565,9 +583,10 @@ def finance_summary(
         )
         .filter(Expense.date >= six_months_ago)
         .filter(Expense.status == "approved")
-        .group_by("y", "m")
-        .all()
     )
+    if advance_user_ids:
+        monthly_exp_q = monthly_exp_q.filter(~Expense.created_by.in_(advance_user_ids))
+    monthly_expenses = monthly_exp_q.group_by("y", "m").all()
 
     monthly_payroll = (
         db.query(
@@ -576,6 +595,7 @@ def finance_summary(
             func.sum(Payroll.net_amount),
         )
         .filter(Payroll.period_end >= six_months_ago)
+        .filter(Payroll.status == "paid")
         .group_by("y", "m")
         .all()
     )
@@ -612,11 +632,14 @@ def finance_summary(
 
     if total_payroll > 0:
         expense_by_category.append(CategorySummary(category="Зарплаты", amount=total_payroll))
+    if total_advances > 0:
+        expense_by_category.append(CategorySummary(category="Авансы", amount=total_advances))
 
     return FinanceSummary(
         total_payroll=total_payroll,
         total_expenses=total_expenses,
         total_income=total_income,
+        total_advances=total_advances,
         net=balance,
         balance=balance,
         period_start=period_start,
